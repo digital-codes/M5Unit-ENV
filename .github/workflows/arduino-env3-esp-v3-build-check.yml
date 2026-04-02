@@ -64,7 +64,6 @@ jobs:
           - arduino_nesso_n1
           - m5stack_atom
           - m5stack_atoms3
-          - m5stack_atoms3r
           - m5stack_capsule
           - m5stack_cardputer
           - m5stack_core
