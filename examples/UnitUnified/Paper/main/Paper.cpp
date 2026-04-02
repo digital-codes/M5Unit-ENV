@@ -19,8 +19,9 @@ float latest_temperature{};
 float latest_humidity{};
 bool has_measurement{};
 uint32_t last_lcd_update_ms{};
+constexpr uint32_t lcd_update_interval_ms{60 * 1000U};
 
-void draw_dashboard(const float temperature, const float humidity)
+void draw_dashboard(const float temperature, const float humidity, const bool force_full_refresh = false)
 {
     char temp_text[32];
     char hum_text[32];
@@ -30,13 +31,23 @@ void draw_dashboard(const float temperature, const float humidity)
     const int w = lcd.width();
     const int h = lcd.height();
 
-    constexpr int value_x      = 220;
-    constexpr int temp_value_y = 130;
-    const int humid_value_y    = h / 2 + 58;
+    constexpr int value_x{220};
+    constexpr int temp_value_y{130};
+    constexpr uint8_t full_refresh_cycle{5};
+    const int humid_value_y = h / 2 + 58;
 
     static bool initialized{};
-    lcd.startWrite();
-    if (!initialized) {
+    static uint8_t partial_count{};
+
+    // Set EPD mode before any drawing to avoid mid-frame refresh
+    if (force_full_refresh || ++partial_count >= full_refresh_cycle) {
+        lcd.setEpdMode(m5gfx::epd_mode_t::epd_quality);
+        partial_count = 0;
+    } else {
+        lcd.setEpdMode(m5gfx::epd_mode_t::epd_text);
+    }
+
+    if (!initialized || force_full_refresh) {
         lcd.fillScreen(TFT_WHITE);
         lcd.drawRoundRect(12, 12, w - 24, h - 24, 16, TFT_BLACK);
         lcd.drawFastHLine(28, 88, w - 56, TFT_BLACK);
@@ -58,13 +69,13 @@ void draw_dashboard(const float temperature, const float humidity)
         initialized = true;
     }
 
+    lcd.waitDisplay();
     lcd.setTextColor(TFT_BLACK, TFT_WHITE);
     lcd.setTextSize(3.5f);
-    lcd.setCursor(value_x, temp_value_y);
-    lcd.print(temp_text);
-    lcd.setCursor(value_x, humid_value_y);
-    lcd.print(hum_text);
-    lcd.endWrite();
+    lcd.setTextPadding(w - value_x - 28);
+    lcd.drawString(temp_text, value_x, temp_value_y);
+    lcd.drawString(hum_text, value_x, humid_value_y);
+    lcd.setTextPadding(0);
 }
 }  // namespace
 
@@ -127,8 +138,10 @@ void loop()
         M5.Log.printf(">SHT30Temp:%2.2f\n>Humidity:%2.2f\n", latest_temperature, latest_humidity);
     }
 
-    if (has_measurement && (now - last_lcd_update_ms >= 60 * 1000U || touch_redraw)) {
-        draw_dashboard(latest_temperature, latest_humidity);
+    if (has_measurement && (now - last_lcd_update_ms >= lcd_update_interval_ms || touch_redraw)) {
+        lcd.startWrite();
+        draw_dashboard(latest_temperature, latest_humidity, touch_redraw);
         last_lcd_update_ms = now;
+        lcd.endWrite();
     }
 }
