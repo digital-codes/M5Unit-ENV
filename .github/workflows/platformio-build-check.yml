@@ -61,6 +61,7 @@ jobs:
           - UnitENVIV
           - UnitENVPro
           - UnitTVOC
+          - UnitMiniBPS11
 
         board:
           - Core

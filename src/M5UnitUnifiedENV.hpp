@@ -48,11 +48,13 @@ namespace m5 {
  */
 namespace unit {
 
-using UnitCO2    = m5::unit::UnitSCD40;   //!< Product name alias for UnitSCD40
-using UnitCO2L   = m5::unit::UnitSCD41;   //!< Product name alias for UnitSCD41
-using UnitENVPro = m5::unit::UnitBME688;  //!< Product name alias for UnitBME688
-using UnitTVOC   = m5::unit::UnitSGP30;   //!< Product name alias for UnitSGP30
-using HatENV3    = m5::unit::UnitENV3;    //!< Product name alias for HatENVIII
+using UnitCO2     = m5::unit::UnitSCD40;    //!< Product name alias for UnitSCD40
+using UnitCO2L    = m5::unit::UnitSCD41;    //!< Product name alias for UnitSCD41
+using UnitENVPro  = m5::unit::UnitBME688;   //!< Product name alias for UnitBME688
+using UnitTVOC    = m5::unit::UnitSGP30;    //!< Product name alias for UnitSGP30
+using UnitMiniBPS   = m5::unit::UnitBMP280;    //!< Product name alias for UnitBMP280 (U090)
+using UnitMiniBPS11 = m5::unit::UnitQMP6988;  //!< Product name alias for UnitQMP6988 (U090-B)
+using HatENV3     = m5::unit::UnitENV3;     //!< Product name alias for HatENVIII
 
 }  // namespace unit
 }  // namespace m5
