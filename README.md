@@ -53,6 +53,8 @@ M5UnitUnified is a library for unified handling of various M5 units products.
 - Unit ENVIV (SKU:U001-D)
 - Unit ENVPro (SKU:U169)
 - Unit TVOC (SKU:U088)
+- Unit MiniBPS (SKU:U090)
+- Unit MiniBPS v1.1 (SKU:U090-B)
 - Hat ENVIII (SKU:U053-D)
 
 ### SKU:U088
