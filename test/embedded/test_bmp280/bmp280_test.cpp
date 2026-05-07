@@ -16,7 +16,6 @@
 #include <m5_unit_component/adapter_i2c.hpp>
 #include <chrono>
 #include <cmath>
-#include <random>
 
 using namespace m5::unit::googletest;
 using namespace m5::unit;
@@ -25,6 +24,32 @@ using namespace m5::unit::bmp280::command;
 using m5::unit::types::elapsed_time_t;
 
 constexpr uint32_t STORED_SIZE{8};
+
+#if defined(USING_HAT_BMP280)
+namespace hat {
+struct I2cPins {
+    int sda, scl;
+};
+
+I2cPins get_hat_pins(const m5::board_t board)
+{
+    switch (board) {
+        case m5::board_t::board_M5StickC:
+        case m5::board_t::board_M5StickCPlus:
+        case m5::board_t::board_M5StickCPlus2:
+            return {0, 26};
+        case m5::board_t::board_M5StickS3:
+            return {8, 0};
+        case m5::board_t::board_M5StackCoreInk:
+            return {25, 26};
+        case m5::board_t::board_ArduinoNessoN1:
+            return {6, 7};
+        default:
+            return {-1, -1};
+    }
+}
+}  // namespace hat
+#endif
 
 class TestBMP280 : public I2CComponentTestBase<UnitBMP280> {
 protected:
@@ -36,6 +61,17 @@ protected:
         ptr->component_config(ccfg);
         return ptr;
     }
+#if defined(USING_HAT_BMP280)
+    virtual bool begin() override
+    {
+        auto board      = M5.getBoard();
+        const auto pins = hat::get_hat_pins(board);
+        auto& wire      = (board == m5::board_t::board_ArduinoNessoN1) ? Wire1 : Wire;
+        wire.end();
+        wire.begin(pins.sda, pins.scl, unit->component_config().clock);
+        return Units.add(*unit, wire) && Units.begin();
+    }
+#endif
 
     void print_ctrl_measurement(const char* msg = "")
     {

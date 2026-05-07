@@ -32,10 +32,13 @@
 #include "unit/unit_SHT40.hpp"
 #include "unit/unit_BMP280.hpp"
 #include "unit/unit_ENV4.hpp"
+// HatYun
+#include "unit/unit_SHT20.hpp"
+#include "unit/unit_HatYun.hpp"
 
 /*!
   @namespace m5
-  @brief Top level namespace of M5stack
+  @brief Top level namespace of M5Stack
  */
 namespace m5 {
 
@@ -45,10 +48,11 @@ namespace m5 {
  */
 namespace unit {
 
-using UnitCO2    = m5::unit::UnitSCD40;
-using UnitCO2L   = m5::unit::UnitSCD41;
-using UnitENVPro = m5::unit::UnitBME688;
-using UnitTVOC   = m5::unit::UnitSGP30;
+using UnitCO2    = m5::unit::UnitSCD40;   //!< Product name alias for UnitSCD40
+using UnitCO2L   = m5::unit::UnitSCD41;   //!< Product name alias for UnitSCD41
+using UnitENVPro = m5::unit::UnitBME688;  //!< Product name alias for UnitBME688
+using UnitTVOC   = m5::unit::UnitSGP30;   //!< Product name alias for UnitSGP30
+using HatENV3    = m5::unit::UnitENV3;    //!< Product name alias for HatENVIII
 
 }  // namespace unit
 }  // namespace m5

@@ -1,7 +1,7 @@
-name: Build(arduino-m5stack)
+name: Build ENVIII(arduino-m5stack)
 
 env:
-  SKETCH_NAMES_FIND_START: ./examples/UnitUnified
+  SKETCH_NAMES_FIND_START: ./examples/UnitUnified/UnitENVIII
   REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,BME68x Sensor library,bsec2
 
 on:
@@ -16,26 +16,24 @@ on:
       - 'src/**.hpp'
       - 'src/**.h'
       - 'src/**.c'
-      - 'examples/UnitUnified/**.ino'
-      - 'examples/UnitUnified/**.cpp'
-      - 'examples/UnitUnified/**.hpp'
-      - 'examples/UnitUnified/**.h'
-      - 'examples/UnitUnified/**.c'
-      - '!examples/UnitUnified/UnitENVIII/**'
-      - '.github/workflows/arduino-m5-build-check.yml'
+      - 'examples/UnitUnified/UnitENVIII/**.ino'
+      - 'examples/UnitUnified/UnitENVIII/**.cpp'
+      - 'examples/UnitUnified/UnitENVIII/**.hpp'
+      - 'examples/UnitUnified/UnitENVIII/**.h'
+      - 'examples/UnitUnified/UnitENVIII/**.c'
+      - '.github/workflows/arduino-env3-m5-build-check.yml'
   pull_request:
     paths:
       - 'src/**.cpp'
       - 'src/**.hpp'
       - 'src/**.h'
       - 'src/**.c'
-      - 'examples/UnitUnified/**.ino'
-      - 'examples/UnitUnified/**.cpp'
-      - 'examples/UnitUnified/**.hpp'
-      - 'examples/UnitUnified/**.h'
-      - 'examples/UnitUnified/**.c'
-      - '!examples/UnitUnified/UnitENVIII/**'
-      - '.github/workflows/arduino-m5-build-check.yml'
+      - 'examples/UnitUnified/UnitENVIII/**.ino'
+      - 'examples/UnitUnified/UnitENVIII/**.cpp'
+      - 'examples/UnitUnified/UnitENVIII/**.hpp'
+      - 'examples/UnitUnified/UnitENVIII/**.h'
+      - 'examples/UnitUnified/UnitENVIII/**.c'
+      - '.github/workflows/arduino-env3-m5-build-check.yml'
   workflow_dispatch:
 
 defaults:
@@ -48,7 +46,7 @@ concurrency:
 
 jobs:
   build:
-    name: ${{ matrix.unit }}:${{ matrix.sketch }}:${{matrix.board}}@${{matrix.platform-version}}
+    name: ${{ matrix.build-properties }}:${{ matrix.sketch }}:${{matrix.board}}@${{matrix.platform-version}}
     runs-on: ubuntu-latest
     timeout-minutes: 12
 
@@ -62,13 +60,6 @@ jobs:
         sketch:
           - PlotToSerial
 
-        unit:
-          - UnitCO2
-          - UnitCO2L
-          - UnitENVIV
-          - UnitTVOC
-          - UnitENVPro
-
         board:
           - arduino_nesso_n1
           - m5stack_atom
@@ -76,7 +67,6 @@ jobs:
           - m5stack_atoms3r
           - m5stack_capsule
           - m5stack_cardputer
-#          - m5stack_chain_dualkey
           - m5stack_core
           - m5stack_core2
           - m5stack_coreink
@@ -85,26 +75,14 @@ jobs:
           - m5stack_dinmeter
           - m5stack_fire
           - m5stack_nano_c6
-#          - m5stack_nano_h2
           - m5stack_paper
           - m5stack_papers3
-#          - m5stack_poe_cam
-#          - m5stack_powerhub
-#          - m5stack_stamp_c3
-#          - m5stack_stamp_pico
           - m5stack_stamp_s3
-#          - m5stack_stamplc
-#          - m5stack_station
           - m5stack_stickc
           - m5stack_stickc_plus
           - m5stack_stickc_plus2
           - m5stack_sticks3
           - m5stack_tab5
-#          - m5stack_timer_cam
-#          - m5stack_tough
-#          - m5stack_unit_c6l
-#          - m5stack_unit_cam
-#          - m5stack_unit_cams3
 
         platform-version:
           - 3.2.5
@@ -115,38 +93,46 @@ jobs:
         archi:
           - esp32
 
+        build-properties:
+          - "-DUSING_UNIT_ENV3"
+
         include:
-          # Specific sketches
-          # Paper
-          - sketch: Paper
+          # HatENV3
+          - sketch: PlotToSerial
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
+            platform-version: 3.2.5
             platform: m5stack
             archi: esp32
-            platform-version: 3.2.5
-            board: m5stack_paper
-            unit: ''
-          # HatYun (StickC / StickCPlus / StickCPlus2)
-          - sketch: HatYunEnvironmentGlow
-            platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
-            platform: m5stack
-            archi: esp32
-            platform-version: 3.2.5
-            board: m5stack_stickc
-            unit: HatYun
-          - sketch: HatYunEnvironmentGlow
-            platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
-            platform: m5stack
-            archi: esp32
-            platform-version: 3.2.5
             board: m5stack_stickc_plus
-            unit: HatYun
-          - sketch: HatYunEnvironmentGlow
+            build-properties: "-DUSING_HAT_ENV3"
+          - sketch: PlotToSerial
             platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
+            platform-version: 3.2.5
             platform: m5stack
             archi: esp32
-            platform-version: 3.2.5
             board: m5stack_stickc_plus2
-            unit: HatYun
+            build-properties: "-DUSING_HAT_ENV3"
+          - sketch: PlotToSerial
+            platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
+            platform-version: 3.2.5
+            platform: m5stack
+            archi: esp32
+            board: m5stack_sticks3
+            build-properties: "-DUSING_HAT_ENV3"
+          - sketch: PlotToSerial
+            platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
+            platform-version: 3.2.5
+            platform: m5stack
+            archi: esp32
+            board: m5stack_coreink
+            build-properties: "-DUSING_HAT_ENV3"
+          - sketch: PlotToSerial
+            platform-url: https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
+            platform-version: 3.2.5
+            platform: m5stack
+            archi: esp32
+            board: arduino_nesso_n1
+            build-properties: "-DUSING_HAT_ENV3"
 
     steps:
       - name: Checkout
@@ -174,5 +160,7 @@ jobs:
               version: ${{ matrix.platform-version }}
           libraries: ${{ steps.libs.outputs.yaml }}
           sketch-paths: |
-            - ${{ env.SKETCH_NAMES_FIND_START }}/${{ matrix.unit }}/${{ matrix.sketch }}
-
+            - ${{ env.SKETCH_NAMES_FIND_START }}/${{ matrix.sketch }}
+          cli-compile-flags: |
+            - --build-property
+            - build.extra_flags=${{ matrix.build-properties }}
