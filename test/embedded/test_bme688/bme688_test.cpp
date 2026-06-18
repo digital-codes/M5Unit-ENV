@@ -431,14 +431,14 @@ TEST_F(TestBME688, SingleShot)
     bme68xData data{};
 
     EXPECT_TRUE(unit->inPeriodic());
-    EXPECT_FALSE(unit->measureSingleShot(data));
+    EXPECT_FALSE(unit->measureSingleshot(data));
     EXPECT_TRUE(unit->stopPeriodicMeasurement());
 
     Mode m{};
     EXPECT_TRUE(unit->readMode(m));
     EXPECT_EQ(m, Mode::Sleep);
     EXPECT_FALSE(unit->inPeriodic());
-    EXPECT_TRUE(unit->measureSingleShot(data));
+    EXPECT_TRUE(unit->measureSingleshot(data));
 
 #if 0
     M5_LOGI(
