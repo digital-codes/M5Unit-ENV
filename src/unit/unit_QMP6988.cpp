@@ -526,7 +526,7 @@ bool UnitQMP6988::read_calibration(qmp6988::Calibration& c)
     uint32_t b00 = ((uint32_t)(big_uint16_t(rbuf[0], rbuf[1]).get()) << 4) | ((rbuf[24] >> 4) & 0x0F);
     c.b00        = unsigned_to_signed<20>(b00);                                                                 // 20Q4
     c.bt1        = 2982L * (int64_t)unsigned_to_signed<16>(big_uint16_t(rbuf[2], rbuf[3]).get()) + 107370906L;  // 28Q15
-    c.bt2 = 329854L * (int64_t)unsigned_to_signed<16>(big_uint16_t(rbuf[4], rbuf[5]).get()) + +108083093L;      // 34Q38
+    c.bt2 = 329854L * (int64_t)unsigned_to_signed<16>(big_uint16_t(rbuf[4], rbuf[5]).get()) + 108083093L;       // 34Q38
     c.bp1 = 19923L * (int64_t)unsigned_to_signed<16>(big_uint16_t(rbuf[6], rbuf[7]).get()) + 1133836764L;       // 31Q20
     c.b11 = 2406L * (int64_t)unsigned_to_signed<16>(big_uint16_t(rbuf[8], rbuf[9]).get()) + 118215883L;         // 28Q34
     c.bp2 = 3079L * (int64_t)unsigned_to_signed<16>(big_uint16_t(rbuf[10], rbuf[11]).get()) - 181579595L;       // 29Q43

@@ -227,7 +227,12 @@ void is_bsec_virtual_sensor_t()
 }
 ///@endcond
 
-//! @brief  Conversion from BSEC2 subscription array to bits
+/*!
+  @brief Conversion from BSEC2 subscription array to bits
+  @param ss Array of requested virtual sensor (output) configurations for the library
+  @param len Number of array elements
+  @return Subscription bits
+ */
 inline uint32_t virtual_sensor_array_to_bits(const bsec_virtual_sensor_t* ss, const size_t len)
 {
     uint32_t ret{};
@@ -239,6 +244,8 @@ inline uint32_t virtual_sensor_array_to_bits(const bsec_virtual_sensor_t* ss, co
 
 /*!
   @brief Make subscribe bits from bsec_virtual_sensor_t
+  @param args bsec_virtual_sensor_t values
+  @return Subscription bits
  */
 template <typename... Args>
 uint32_t subscribe_to_bits(Args... args)
@@ -616,6 +623,8 @@ public:
     bool writeCalibration(const bme688::bme68xCalibration& c);
     /*!
       @brief Calculation of measurement intervals without heater
+      @param mode Mode for measurement
+      @param s Sensor configuration
       @return interval time (Unit: us)
     */
     uint32_t calculateMeasurementInterval(const bme688::Mode mode, const bme688::bme68xConf& s);
@@ -755,6 +764,7 @@ public:
     /*!
       @brief Start periodic measurement using BSEC2
       @param subscribe_bits Measurement type bits
+      @param sr Sample rate
       @return True if successful
       @warning Not available for NanoC6
     */
@@ -767,6 +777,7 @@ public:
       @brief Start periodic measurement using BSEC2
       @param ss Array of requested virtual sensor (output) configurations for the library
       @param len Number of array elements
+      @param sr Sample rate
       @return True if successful
       @warning Not available for NanoC6
     */
@@ -797,15 +808,22 @@ public:
       @note Measure once by Force mode
       @note Blocked until it can be measured.
     */
-    bool measureSingleShot(bme688::bme68xData& data);
+    bool measureSingleshot(bme688::bme68xData& data);
+    //! @brief Take a single measurement
+    //! @deprecated Use measureSingleshot instead
+    [[deprecated("Use measureSingleshot")]] inline bool measureSingleShot(bme688::bme68xData& data)
+    {
+        return measureSingleshot(data);
+    }
     ///@}
 
 #if defined(UNIT_BME688_USING_BSEC2) || defined(DOXYGEN_PROCESS)
-    ///@warning Not available for NanoC6
     ///@name Bosch BSEC2 wrapper
     ///@{
     /*!
       @brief Gets the temperature offset(Celsius)
+      @return Temperature offset(Celsius)
+      @warning Not available for NanoC6
      */
     float bsec2GetTemperatureOffset() const
     {

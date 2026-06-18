@@ -475,8 +475,8 @@ bool UnitBMP280::writePowerMode(const PowerMode m)
         cm.mode(m);
 
         // Datasheet says
-        // If the device is currently performing ameasurement,
-        // execution of mode switching commands is delayed until the end of the currentlyrunning measurement period
+        // If the device is currently performing a measurement,
+        // execution of mode switching commands is delayed until the end of the currently running measurement period
         bool can{};
         auto timeout_at = m5::utility::millis() + 1000;
         do {

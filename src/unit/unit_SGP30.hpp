@@ -97,7 +97,7 @@ public:
         //! Absolute humidity initial value if start on begin
         uint16_t humidity{};
         /*!
-          Inceptive Baseline for TVOC measurements initial value if start on begin
+          @brief Inceptive Baseline for TVOC measurements initial value if start on begin
           @warning The application of this feature is solely limited to the very
           first start-up period of an SGP sensor
          */
@@ -138,6 +138,7 @@ public:
     ///@{
     /*!
       @brief Gets the product version
+      @return The product version
       @warning Calling after the call of begin()
      */
     inline uint8_t productVersion() const
@@ -304,6 +305,7 @@ public:
     bool readFeatureSet(sgp30::Feature& feature);
     /*!
       @brief Read the serial number
+      @param[out] number Serial number value
       @return True if successful
       @note Serial number is 48bits
     */

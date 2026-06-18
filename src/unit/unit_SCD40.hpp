@@ -221,7 +221,7 @@ public:
     bool readSensorAltitude(uint16_t &altitude);
     /*!
       @brief Write the ambient pressure
-      @details Define the ambient pressure in Pascals, so RH and CO2 are compensated for atmospheric pressure
+      @details Define the ambient pressure in hPa, so RH and CO2 are compensated for atmospheric pressure
       setAmbientPressure overrides setSensorAltitude
       @param pressure Ambient pressure [hPa]
       @param duration Max command duration(ms)
@@ -287,6 +287,7 @@ public:
     ///@{
     /*!
       @brief Write sensor settings from RAM to EEPROM
+      @param duration Max command duration(ms)
       @return True if successful
       @warning During periodic detection runs, an error is returned
     */
@@ -318,6 +319,7 @@ public:
     /*!
       @brief Perform factory reset
       @details Reset all settings to the factory values
+      @param duration Max command duration(ms)
       @return True if successful
       @warning During periodic detection runs, an error is returned
       @warning Measurement duration max 1200 ms
@@ -325,6 +327,7 @@ public:
     bool performFactoryReset(const uint32_t duration = scd4x::PERFORM_FACTORY_RESET_DURATION);
     /*!
       @brief Re-initialize the sensor, load settings from EEPROM
+      @param duration Max command duration(ms)
       @return True if successful
       @warning During periodic detection runs, an error is returned
       @warning Measurement duration max 20 ms

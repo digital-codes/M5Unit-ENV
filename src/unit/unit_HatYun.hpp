@@ -112,8 +112,6 @@ public:
     }
     ///@}
 
-    ///@note LED heat affects SHT20/BMP280 temperature readings due to the compact Hat form factor.
-    ///  Consider lowering brightness or turning off LEDs when accurate temperature measurement is required.
     ///@name LED control
     ///@{
     /*!
@@ -123,6 +121,8 @@ public:
       @param g Green (0-255)
       @param b Blue (0-255)
       @return True if successful
+      @note LED heat affects SHT20/BMP280 temperature readings due to the compact Hat form factor.
+      Consider lowering brightness or turning off LEDs when accurate temperature measurement is required.
     */
     bool writeLED(const uint8_t num, const uint8_t r, const uint8_t g, const uint8_t b);
     /*!

@@ -273,7 +273,11 @@ public:
     */
     bool measureSingleshot(bmp280::Data& d, const bmp280::Oversampling osrsPressure,
                            const bmp280::Oversampling osrsTemperature, const bmp280::Filter filter);
-    //! @brief Measurement single shot using current settings
+    /*!
+      @brief Measurement single shot using current settings
+      @param[out] d Measurement data
+      @return True if successful
+    */
     inline bool measureSingleshot(bmp280::Data& d)
     {
         return measure_singleshot(d);
