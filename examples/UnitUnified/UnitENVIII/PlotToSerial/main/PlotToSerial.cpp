@@ -15,9 +15,9 @@
 // Choose one define symbol to match the unit you are using
 // *************************************************************
 #if !defined(USING_UNIT_ENV3) && !defined(USING_HAT_ENV3)
-// For UnitENV3
+// For Unit ENVIII (U001-C)
 // #define USING_UNIT_ENV3
-// For HatENV3
+// For Hat ENVIII (U053-D)
 // #define USING_HAT_ENV3
 #endif
 // *************************************************************
