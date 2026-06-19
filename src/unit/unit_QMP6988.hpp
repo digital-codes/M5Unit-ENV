@@ -158,8 +158,7 @@ public:
         : Component(addr), _data{new m5::container::CircularBuffer<qmp6988::Data>(1)}
     {
         auto ccfg  = component_config();
-        ccfg.clock = 100 * 1000U;
-        // QMP6988 datasheet: if bus >400 kbit/s and shared, wait >=1 ms before access
+        ccfg.clock = 400 * 1000U;
         component_config(ccfg);
     }
     virtual ~UnitQMP6988()
