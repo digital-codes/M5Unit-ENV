@@ -445,11 +445,11 @@ TEST_F(TestQMP6988, Periodic)
             // such as ESP32-H2 otherwise time out before STORED_SIZE samples at 1ms standby).
             uint32_t measure = measure_time_table[m5::stl::to_underlying(val.osrss)];
             uint32_t cycle   = std::max<uint32_t>(measure, unit->interval());
-            M5_LOGI("Periodic: %s interval:%lu measure:%lu cycle:%lu ms", s.c_str(),
-                    (unsigned long)unit->interval(), (unsigned long)measure, (unsigned long)cycle);
-            uint32_t timeout = is_bus ? std::max<uint32_t>(cycle, 500) * (STORED_SIZE + 1) * 4
-                                      : cycle * (STORED_SIZE + 1);
-            auto r           = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
+            M5_LOGI("Periodic: %s interval:%lu measure:%lu cycle:%lu ms", s.c_str(), (unsigned long)unit->interval(),
+                    (unsigned long)measure, (unsigned long)cycle);
+            uint32_t timeout =
+                is_bus ? std::max<uint32_t>(cycle, 500) * (STORED_SIZE + 1) * 4 : cycle * (STORED_SIZE + 1);
+            auto r = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
 
             EXPECT_TRUE(unit->stopPeriodicMeasurement());
             EXPECT_FALSE(unit->inPeriodic());

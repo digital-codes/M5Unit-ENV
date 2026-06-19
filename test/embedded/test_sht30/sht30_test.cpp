@@ -120,9 +120,10 @@ TEST_F(TestSHT30, SingleShot)
         SCOPED_TRACE(s);
 
         if (stretch && nesso_lp_i2c && rep != Repeatability::Low) {
-            M5_LOGW("Skip long clock-stretch (rep=%d) on NessoN1 HatPort (LP_I2C stretch timeout ~3.75ms < hold; "
-                    "see clock-stretch-timeout-task)",
-                    (int)rep);
+            M5_LOGW(
+                "Skip long clock-stretch (rep=%d) on NessoN1 HatPort (LP_I2C stretch timeout ~3.75ms < hold; "
+                "see clock-stretch-timeout-task)",
+                (int)rep);
             continue;
         }
 

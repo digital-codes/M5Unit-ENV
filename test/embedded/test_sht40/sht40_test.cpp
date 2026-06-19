@@ -221,8 +221,8 @@ TEST_F(TestSHT40, Periodic)
         EXPECT_TRUE(unit->inPeriodic());
 
         // interval() can be small (2-9ms); use actual cycle time to ensure non-zero timeout
-        uint32_t cycle        = std::max(tm, unit->interval());
-        uint32_t timeout      = is_bus ? std::max(cycle, (uint32_t)500) * (STORED_SIZE + 1) * 4 : cycle * (STORED_SIZE + 1);
+        uint32_t cycle   = std::max(tm, unit->interval());
+        uint32_t timeout = is_bus ? std::max(cycle, (uint32_t)500) * (STORED_SIZE + 1) * 4 : cycle * (STORED_SIZE + 1);
         uint32_t tolerance    = is_bus ? 5 : 1;
         uint32_t median_bound = unit->interval() + tolerance;
 #if defined(CONFIG_IDF_TARGET_ESP32P4)
@@ -235,14 +235,14 @@ TEST_F(TestSHT40, Periodic)
         if (p4_low) {
             M5_LOGW("ESP32-P4: %s polled at %ums (native 2ms rate hits i2c_master INVALID_STATE; upstream)", s,
                     (unsigned)P4_PERIODIC_POLL_MS);
-            timeout = std::max<uint32_t>(timeout, P4_PERIODIC_POLL_MS * (STORED_SIZE + 1) * 4);  // heater room
+            timeout      = std::max<uint32_t>(timeout, P4_PERIODIC_POLL_MS * (STORED_SIZE + 1) * 4);  // heater room
             median_bound = P4_PERIODIC_POLL_MS + tolerance + 2U;
         }
         // Explicit <UnitSHT40>: a lambda can't deduce U from the void(*)(U*) callback parameter.
-        auto r = p4_low ? collect_periodic_measurements<UnitSHT40>(
-                              unit.get(), STORED_SIZE, timeout,
-                              [](UnitSHT40*) { m5::utility::delay(P4_PERIODIC_POLL_MS); })
-                        : collect_periodic_measurements<UnitSHT40>(unit.get(), STORED_SIZE, timeout);
+        auto r =
+            p4_low ? collect_periodic_measurements<UnitSHT40>(
+                         unit.get(), STORED_SIZE, timeout, [](UnitSHT40*) { m5::utility::delay(P4_PERIODIC_POLL_MS); })
+                   : collect_periodic_measurements<UnitSHT40>(unit.get(), STORED_SIZE, timeout);
 #else
         auto r = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
 #endif
