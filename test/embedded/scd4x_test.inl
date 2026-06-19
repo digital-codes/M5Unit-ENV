@@ -268,7 +268,9 @@ TEST_F(TestSCD4x, Periodic)
 
         EXPECT_FALSE(r.timed_out);
         EXPECT_EQ(r.update_count, STORED_SIZE);
-        EXPECT_LE(r.median(), r.expected_interval + 1);
+        // SCD4x is seconds-scale (5s/30s); allow a proportional tolerance for the internal clock and
+        // data-ready polling latency instead of the fixed +1ms used by fast sensors
+        EXPECT_LE(r.median(), r.expected_interval + r.expected_interval / 20U);  // +5%
 
         //
         EXPECT_EQ(unit->available(), STORED_SIZE);
