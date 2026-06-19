@@ -9,6 +9,7 @@
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
 #include <M5UnitUnifiedENV.h>
+#include <wiring/m5_unit_unified_wiring.hpp>  // for failStop()
 #include <cstdio>
 
 namespace {
@@ -90,10 +91,7 @@ void setup()
     M5.begin();
     if (M5.getBoard() != m5::board_t::board_M5Paper) {
         M5_LOGE("This example is for the SHT30 sensor built into the M5Paper");
-        lcd.fillScreen(TFT_RED);
-        while (true) {
-            m5::utility::delay(10000);
-        }
+        m5::unit::wiring::failStop();
     }
 
     M5.setTouchButtonHeightByRatio(100);
@@ -107,13 +105,10 @@ void setup()
     if (!Units.add(sht30, M5.In_I2C) || !Units.begin()) {
         M5_LOGE("Failed to begin");
         M5_LOGW("%s", Units.debugInfo().c_str());
-        lcd.fillScreen(TFT_RED);
-        while (true) {
-            m5::utility::delay(10000);
-        }
+        m5::unit::wiring::failStop();
     }
 
-    M5_LOGI("M5UnitUnified has been begun");
+    M5_LOGI("M5UnitUnified initialized");
     M5_LOGI("%s", Units.debugInfo().c_str());
     lcd.fillScreen(TFT_WHITE);
     last_lcd_update_ms = m5::utility::millis() - 60 * 1000U;
@@ -128,7 +123,7 @@ void loop()
 
     if (M5.Touch.getCount()) {
         const auto td = M5.Touch.getDetail(0);
-        touch_redraw  = td.wasPressed() || td.wasClicked();
+        touch_redraw  = td.wasPressed();
     }
 
     if (sht30.updated()) {
