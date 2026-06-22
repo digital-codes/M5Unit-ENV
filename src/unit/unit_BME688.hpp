@@ -19,15 +19,34 @@
 #include <bme68x/bme68x.h>
 #endif
 
+// Enable BSEC2 (IAQ) only where the prebuilt blob exists. Arduino: esp32/s3/c3 (unchanged). ESP-IDF
+// native: only when the in-repo components/bsec2 recipe is enabled (CONFIG_M5UNIT_ENV_ENABLE_BSEC2)
+// and has exposed its headers -- detected via __has_include of the BSEC interface header.
+#if defined(ARDUINO)
 #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
 #define UNIT_BME688_USING_BSEC2
+#endif
+#elif __has_include(<inc/bsec_interface.h>)
+#define UNIT_BME688_USING_BSEC2
+#endif
 
+#if defined(UNIT_BME688_USING_BSEC2)
 #if defined(ARDUINO)
 #include <bsec2.h>
 #else
 #include <inc/bsec_datatypes.h>
+// ESP-IDF native uses the raw BSEC API directly (no Arduino Bsec2 wrapper). The BME688 code relies
+// on two small helpers that the Arduino wrapper (bsec2.h) provides but the raw API headers do not;
+// define them here identically. BSEC_NUMBER_OUTPUTS comes from <inc/bsec_datatypes.h>.
+#ifndef BSEC_CHECK_INPUT
+#define BSEC_CHECK_INPUT(x, shift) (x & (1 << (shift - 1)))
 #endif
-
+typedef bsec_output_t bsecData;
+typedef struct {
+    bsecData output[BSEC_NUMBER_OUTPUTS];
+    uint8_t nOutputs;
+} bsecOutputs;
+#endif
 #endif
 
 #include <memory>
