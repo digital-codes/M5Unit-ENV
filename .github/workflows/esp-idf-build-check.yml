@@ -85,10 +85,10 @@ jobs:
           - label: UnitENVIV (SHT40+BMP280)
             example_path: examples/UnitUnified/UnitENVIV/PlotToSerial
             config: ''
-          - label: UnitENVPro (BME688 raw)
+          - label: UnitENVPro BSEC2-OFF (BME688 raw)
             example_path: examples/UnitUnified/UnitENVPro/PlotToSerial
             config: ''
-          - label: UnitENVPro (BME688 + BSEC2)
+          - label: UnitENVPro BSEC2-ON (BME688 IAQ)
             example_path: examples/UnitUnified/UnitENVPro/PlotToSerial
             config: CONFIG_M5UNIT_ENV_ENABLE_BSEC2=y
           - label: UnitMiniBPS11 (QMP6988)
