@@ -8,6 +8,7 @@
   @brief SCD41 Unit for M5UnitUnified
 */
 #include "unit_SCD41.hpp"
+#include "unit_SCD4x_detail.hpp"
 #include <M5Utility.hpp>
 #include <array>
 using namespace m5::utility::mmh3;
@@ -22,7 +23,11 @@ namespace {
 constexpr uint16_t MEASURE_SINGLE_SHOT_DURATION{5000};
 constexpr uint16_t MEASURE_SINGLE_SHOT_RHT_ONLY_DURATION{50};
 
-const uint8_t VARIANT_VALUE[2]{0x14, 0x40};  // SCD41
+//! @brief Is the get_sensor_variant (0x202F) high byte an SCD41?
+inline bool is_unit_scd41(const uint8_t variant_high_byte)
+{
+    return m5::unit::scd4x::detail::is_sensor_variant(variant_high_byte, m5::unit::scd4x::detail::VARIANT_NIBBLE_SCD41);
+}
 
 }  // namespace
 
@@ -36,7 +41,7 @@ const types::attr_t UnitSCD41::attr{attribute::AccessI2C};
 bool UnitSCD41::is_valid_chip()
 {
     uint8_t var[2]{};
-    if (!read_register(GET_SENSOR_VARIANT, var, 2) || memcmp(var, VARIANT_VALUE, 2) != 0) {
+    if (!read_register(GET_SENSOR_VARIANT, var, 2) || !is_unit_scd41(var[0])) {
         M5_LIB_LOGE("Not SCD41 %02X:%02X", var[0], var[1]);
         return false;
     }

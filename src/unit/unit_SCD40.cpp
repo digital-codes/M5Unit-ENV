@@ -8,6 +8,7 @@
   @brief SCD40 Unit for M5UnitUnified
 */
 #include "unit_SCD40.hpp"
+#include "unit_SCD4x_detail.hpp"
 #include <M5Utility.hpp>
 #include <array>
 
@@ -40,7 +41,11 @@ constexpr uint32_t interval_table[] = {
     30 * 1000U,  // 30 Sec.
 };
 
-const uint8_t VARIANT_VALUE[2]{0x04, 0x40};  // SCD40
+//! @brief Is the get_sensor_variant (0x202F) high byte an SCD40?
+inline bool is_unit_scd40(const uint8_t variant_high_byte)
+{
+    return m5::unit::scd4x::detail::is_sensor_variant(variant_high_byte, m5::unit::scd4x::detail::VARIANT_NIBBLE_SCD40);
+}
 
 }  // namespace
 
@@ -111,7 +116,7 @@ bool UnitSCD40::begin()
 bool UnitSCD40::is_valid_chip()
 {
     uint8_t var[2]{};
-    if (!read_register(GET_SENSOR_VARIANT, var, 2) || memcmp(var, VARIANT_VALUE, 2) != 0) {
+    if (!read_register(GET_SENSOR_VARIANT, var, 2) || !is_unit_scd40(var[0])) {
         M5_LIB_LOGE("Not SCD40 %02X:%02X", var[0], var[1]);
         return false;
     }
