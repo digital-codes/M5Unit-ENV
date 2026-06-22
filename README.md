@@ -55,9 +55,11 @@ Hat Yun is a cloud-shaped multifunctional environmental information collection b
 - [M5Utility](https://github.com/m5stack/M5Utility)
 - [M5HAL](https://github.com/m5stack/M5HAL)
 
-The Bosch library is required by ENVPro to obtain values that cannot be obtained without using the Bosch library.
-- [Bosch-BME68x-Library](https://github.com/boschsensortec/Bosch-BME68x-Library)
-- [Bosch-BSEC2-Library](https://github.com/boschsensortec/Bosch-BSEC2-Library) (Excluding ESP32-C6 [NanoC6 / NessoN1] and ESP32-P4 [Tab5])
+ENVPro (BME688) additionally needs the Bosch libraries:
+- [Bosch-BME68x-Library](https://github.com/boschsensortec/Bosch-BME68x-Library) — raw temperature / pressure / humidity / gas (all targets)
+- [Bosch-BSEC2-Library](https://github.com/boschsensortec/Bosch-BSEC2-Library) — air-quality (IAQ) output, optional; the Bosch prebuilt exists only for ESP32 / ESP32-S2 / ESP32-S3 (excluded on ESP32-C6 [NanoC6 / NessoN1], ESP32-H2 [NanoH2], ESP32-P4 [Tab5])
+
+On Arduino / PlatformIO these are installed as library dependencies (BSEC2 is skipped automatically on the excluded targets). On ESP-IDF native they are fetched at build time: BME68x always, BSEC2 only when you opt in for the ENVPro example (see [For ESP-IDF settings](#for-esp-idf-settings)).
 
 
 ## License
@@ -79,6 +81,37 @@ The UnitENVIII example supports both Unit and Hat variants. Select the variant b
 // #define USING_HAT_ENV3
 #endif
 ```
+
+### For ESP-IDF settings
+
+> **NOTE:** The library and examples target ESP-IDF **5.x** (>=5.0).  
+> `M5Unified` / `M5GFX` do not yet support ESP-IDF 6.x; stay on the latest 5.x release until upstream support lands.
+
+On ESP-IDF native builds (`idf.py`), options are selected via Kconfig (`menuconfig`) instead of editing the source `#define`.
+
+**UnitENVIII variant (Unit / Hat)** — the example offers the same choice as the Arduino build through `main/Kconfig.projbuild` -> `examples/UnitUnified/common/Kconfig.variant`; `variant.cmake` maps the chosen `CONFIG_EXAMPLE_USING_*` to the source-level `USING_*` macro:
+
+```sh
+cd examples/UnitUnified/UnitENVIII/PlotToSerial
+idf.py set-target esp32          # or esp32s3 / esp32c6 / esp32h2 / esp32p4
+idf.py menuconfig
+# -> M5Unit-ENV ENVIII example -> Target unit / board -> UnitENV3 / HatENV3
+idf.py build flash monitor
+```
+
+**UnitENVPro BSEC2 (BME688 IAQ)** — ENVPro can additionally output Bosch BSEC2 air-quality (IAQ) values on top of the raw temperature/pressure/humidity/gas readings. BSEC2 is **opt-in** and is only offered on the targets Bosch ships the prebuilt library for: **esp32 / esp32-s2 / esp32-s3** (on M5Stack hardware these are Core = esp32 and CoreS3 = esp32-s3):
+
+```sh
+cd examples/UnitUnified/UnitENVPro/PlotToSerial
+idf.py set-target esp32          # esp32 / esp32s2 / esp32s3
+idf.py menuconfig
+# -> M5Unit-ENV BSEC2 (BME688 IAQ) -> [*] Enable BSEC2 (IAQ) for BME688
+idf.py build flash monitor
+```
+
+- The **`M5Unit-ENV BSEC2 (BME688 IAQ)` menu item appears only on esp32 / esp32-s2 / esp32-s3.** On esp32-c6 / esp32-h2 / esp32-p4 (NanoC6 / NessoN1 / NanoH2 / Tab5) the Bosch prebuilt does not exist, so the item is hidden and ENVPro reports raw measurements only.
+- Enabling it downloads the Bosch BSEC2 package at build time; **enabling it constitutes acceptance of the Bosch BSEC license.** No Bosch binaries are stored in this repository.
+- Default is off (raw measurements only).
 
 ## Doxygen document
 [GitHub Pages](https://m5stack.github.io/M5Unit-ENV/)
