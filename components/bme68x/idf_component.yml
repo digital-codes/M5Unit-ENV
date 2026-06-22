@@ -1,0 +1,6 @@
+description: >-
+  Build-time downloader for the Bosch BME68x-Sensor-API raw register driver (BSD-3-Clause). No Bosch
+  bytes are vendored in this repository; the pinned upstream package is fetched at configure time,
+  matching the version the Arduino build uses. Provides <bme68x/bme68x.h> for all targets.
+version: "1.3.40408"
+license: BSD-3-Clause
