@@ -9,6 +9,7 @@
 */
 #include "unit_ENV3.hpp"
 #include <M5Utility.hpp>
+#include <algorithm>
 
 namespace m5 {
 namespace unit {
@@ -25,6 +26,10 @@ UnitENV3::UnitENV3(const uint8_t addr) : Component(addr)
     // Form a parent-child relationship
     auto cfg         = component_config();
     cfg.max_children = 2;
+    // Children share the parent's single bus clock (ensure_adapter duplicates this adapter), so set it
+    // from the children. Use min so the shared bus never exceeds the slowest child's rating; without this
+    // the parent falls back to the base default (100kHz) and the children run slower than intended.
+    cfg.clock = std::min(sht30.component_config().clock, qmp6988.component_config().clock);
     component_config(cfg);
     _valid = add(sht30, 0) && add(qmp6988, 1);
 }

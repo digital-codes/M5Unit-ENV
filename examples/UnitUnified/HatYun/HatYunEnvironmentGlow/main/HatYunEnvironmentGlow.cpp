@@ -16,6 +16,7 @@
 #include <M5Unified.h>
 #include <M5UnitUnified.h>
 #include <M5UnitUnifiedENV.h>
+#include <wiring/m5_unit_unified_wiring.hpp>  // Board-aware I2C wiring helpers
 #include <cmath>
 
 namespace {
@@ -280,21 +281,6 @@ void draw_display(const float temp, const float humi, const float pres, const fl
     canvas.pushSprite(0, 0);
 }
 
-struct HatPins {
-    int sda, scl;
-};
-HatPins get_hat_pins(const m5::board_t board)
-{
-    switch (board) {
-        case m5::board_t::board_M5StickC:
-        case m5::board_t::board_M5StickCPlus:
-        case m5::board_t::board_M5StickCPlus2:
-            return {0, 26};
-        default:
-            return {-1, -1};
-    }
-}
-
 }  // namespace
 
 void setup()
@@ -313,23 +299,10 @@ void setup()
     canvas.setPsram(false);
     canvas.createSprite(lcd.width(), lcd.height());
 
-    auto board      = M5.getBoard();
-    const auto pins = get_hat_pins(board);
-    if (pins.sda < 0 || pins.scl < 0) {
-        M5_LOGE("Unsupported board for HatYun");
-        lcd.fillScreen(TFT_RED);
-        while (true) {
-            m5::utility::delay(10000);
-        }
-    }
-    Wire.end();
-    Wire.begin(pins.sda, pins.scl, 400 * 1000U);
-    if (!Units.add(unit, Wire) || !Units.begin()) {
+    // Board-aware Hat I2C (StickC series)
+    if (!m5::unit::wiring::addHatI2C(Units, unit) || !Units.begin()) {
         M5_LOGE("Failed to begin");
-        lcd.fillScreen(TFT_RED);
-        while (true) {
-            m5::utility::delay(10000);
-        }
+        m5::unit::wiring::failStop();
     }
 
     lcd.fillScreen(TFT_BLACK);
@@ -410,3 +383,34 @@ void loop()
                      unit.light());
     }
 }
+
+#if !defined(ARDUINO)
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_timer.h>
+
+#if CONFIG_FREERTOS_UNICORE
+static inline void feedIdleTaskPeriodically(void)
+{
+    constexpr uint32_t FEED_INTERVAL_MS   = 2000;
+    constexpr TickType_t FEED_SLEEP_TICKS = pdMS_TO_TICKS(5);
+    static uint32_t s_next_feed_ms        = 0;
+    const uint32_t now_ms                 = static_cast<uint32_t>(esp_timer_get_time() / 1000);
+    if (now_ms >= s_next_feed_ms) {
+        s_next_feed_ms = now_ms + FEED_INTERVAL_MS;
+        vTaskDelay(FEED_SLEEP_TICKS);
+    }
+}
+#endif
+
+extern "C" void app_main(void)
+{
+    setup();
+    for (;;) {
+#if CONFIG_FREERTOS_UNICORE
+        feedIdleTaskPeriodically();
+#endif
+        loop();
+    }
+}
+#endif

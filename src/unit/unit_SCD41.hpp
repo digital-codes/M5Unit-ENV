@@ -84,7 +84,6 @@ public:
     /*!
       @brief Wake up
       @details The sensor from sleep mode into idle mode
-      @param duration Max command duration(ms)
       @return True if successful
       @warning During periodic detection runs, an error is returned
      */
@@ -106,7 +105,6 @@ public:
     /*!
       @brief Read the duration of the initial period for ASC correction
       @param[out] hours ASC initial period
-      @param duration Max command duration(ms)
       @return True if successful
       @warning During periodic detection runs, an error is returned
      */
@@ -126,7 +124,6 @@ public:
       @param[out] hours ASC standard period
       @return True if successful
       @warning During periodic detection runs, an error is returned
-      @warning Allowed values are integer multiples of 4 hours
      */
     bool readAutomaticSelfCalibrationStandardPeriod(uint16_t& hours);
     ///@}

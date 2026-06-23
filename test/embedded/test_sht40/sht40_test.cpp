@@ -54,6 +54,15 @@ std::tuple<const char*, Precision, Heater, elapsed_time_t> sm_table[] = {
     {"LowNone", Precision::Low, Heater::None, 2},
 };
 
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+// ESP32-P4: poll interval (ms) for SHT40 Low-precision periodic. The native ~2ms back-to-back read rate
+// hits the new I2C master driver's ESP_ERR_INVALID_STATE (skill m5-esp32p4-i2c-invalid-state). Polling
+// slower avoids it while still verifying Low measures. TUNE THIS to find the P4-safe minimum.
+// NOTE: values <= the driver's _interval (Low = 2ms) are gate-limited and do NOT widen the effective
+// rate (reads stay at 2ms), so 1-2 likely still fail; the meaningful search starts just above 2ms.
+constexpr uint32_t P4_PERIODIC_POLL_MS = 3;
+#endif
+
 }  // namespace
 
 TEST_F(TestSHT40, SoftReset)
@@ -214,11 +223,32 @@ TEST_F(TestSHT40, Periodic)
         // interval() can be small (2-9ms); use actual cycle time to ensure non-zero timeout
         uint32_t cycle   = std::max(tm, unit->interval());
         uint32_t timeout = is_bus ? std::max(cycle, (uint32_t)500) * (STORED_SIZE + 1) * 4 : cycle * (STORED_SIZE + 1);
-        uint32_t tolerance = is_bus ? 5 : 1;
-        auto r             = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
+        uint32_t tolerance    = is_bus ? 5 : 1;
+        uint32_t median_bound = unit->interval() + tolerance;
+#if defined(CONFIG_IDF_TARGET_ESP32P4)
+        // ESP32-P4's new I2C master driver cannot sustain SHT40 Low-precision periodic at its native ~2ms
+        // back-to-back read rate and returns ESP_ERR_INVALID_STATE (upstream; skill
+        // m5-esp32p4-i2c-invalid-state / esp-idf #15374,#14030). Do NOT skip Low — instead verify Low still
+        // measures valid data by polling at a P4-safe interval (P4_PERIODIC_POLL_MS, via a delay callback).
+        // Only the native 2ms cadence is unverifiable on P4, so the median is checked against that interval.
+        const bool p4_low = (p == Precision::Low);
+        if (p4_low) {
+            M5_LOGW("ESP32-P4: %s polled at %ums (native 2ms rate hits i2c_master INVALID_STATE; upstream)", s,
+                    (unsigned)P4_PERIODIC_POLL_MS);
+            timeout      = std::max<uint32_t>(timeout, P4_PERIODIC_POLL_MS * (STORED_SIZE + 1) * 4);  // heater room
+            median_bound = P4_PERIODIC_POLL_MS + tolerance + 2U;
+        }
+        // Explicit <UnitSHT40>: a lambda can't deduce U from the void(*)(U*) callback parameter.
+        auto r =
+            p4_low ? collect_periodic_measurements<UnitSHT40>(
+                         unit.get(), STORED_SIZE, timeout, [](UnitSHT40*) { m5::utility::delay(P4_PERIODIC_POLL_MS); })
+                   : collect_periodic_measurements<UnitSHT40>(unit.get(), STORED_SIZE, timeout);
+#else
+        auto r = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
+#endif
         EXPECT_FALSE(r.timed_out);
-        EXPECT_EQ(r.update_count, STORED_SIZE);
-        EXPECT_LE(r.median(), r.expected_interval + tolerance);
+        EXPECT_EQ(r.update_count, STORED_SIZE);  // Low DOES measure on P4 (data verified at safe poll rate)
+        EXPECT_LE(r.median(), median_bound);
 
         // M5_LOGW("[%s] %lu %zu", s, elapsed, unit->available());
 

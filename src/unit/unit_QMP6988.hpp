@@ -121,10 +121,10 @@ struct Data {
     {
         return celsius();
     }
-    float celsius() const;     //!< temperature (Celsius)
-    float fahrenheit() const;  //!< temperature (Fahrenheit)
-    float pressure() const;    //!< pressure (Pa)
-    const Calibration* calib{};
+    float celsius() const;       //!< temperature (Celsius)
+    float fahrenheit() const;    //!< temperature (Fahrenheit)
+    float pressure() const;      //!< pressure (Pa)
+    const Calibration* calib{};  //!< Calibration data
 };
 
 }  // namespace qmp6988
@@ -158,8 +158,7 @@ public:
         : Component(addr), _data{new m5::container::CircularBuffer<qmp6988::Data>(1)}
     {
         auto ccfg  = component_config();
-        ccfg.clock = 100 * 1000U;
-        // QMP6988 datasheet: if bus >400 kbit/s and shared, wait >=1 ms before access
+        ccfg.clock = 400 * 1000U;
         component_config(ccfg);
     }
     virtual ~UnitQMP6988()
@@ -259,7 +258,11 @@ public:
     */
     bool measureSingleshot(qmp6988::Data& d, const qmp6988::Oversampling osrsPressure,
                            const qmp6988::Oversampling osrsTemperature, const qmp6988::Filter f);
-    //! @brief Measurement single shot using current settings
+    /*!
+      @brief Measurement single shot using current settings
+      @param[out] d Measurement data
+      @return True if successful
+    */
     bool measureSingleshot(qmp6988::Data& d);
     ///@}
 

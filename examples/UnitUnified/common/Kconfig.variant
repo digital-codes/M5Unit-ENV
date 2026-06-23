@@ -1,0 +1,19 @@
+# "Target unit / board" selection for the ENVIII UnitUnified example (ESP-IDF): UnitENV3 over GROVE
+# vs HatENV3 on a Hat port. ENVIII is the only ENV example with a variant, so the menu is named for
+# it. rsource'd from UnitENVIII/PlotToSerial/main/Kconfig.projbuild. The chosen CONFIG_EXAMPLE_USING_*
+# is mapped to the source-level USING_* macro in common/variant.cmake (shared with the Arduino build).
+menu "M5Unit-ENV ENVIII example"
+
+choice EXAMPLE_ENV_VARIANT
+    prompt "Target unit / board"
+    default EXAMPLE_USING_UNIT_ENV3
+    help
+        Which ENVIII connection this example drives.
+
+    config EXAMPLE_USING_UNIT_ENV3
+        bool "UnitENV3 (SHT30+QMP6988, I2C / GROVE)"
+    config EXAMPLE_USING_HAT_ENV3
+        bool "HatENV3 (Hat port)"
+endchoice
+
+endmenu

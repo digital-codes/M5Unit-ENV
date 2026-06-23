@@ -19,15 +19,34 @@
 #include <bme68x/bme68x.h>
 #endif
 
+// Enable BSEC2 (IAQ) only where the prebuilt blob exists. Arduino: esp32/s3/c3 (unchanged). ESP-IDF
+// native: only when the in-repo components/bsec2 recipe is enabled (CONFIG_M5UNIT_ENV_ENABLE_BSEC2)
+// and has exposed its headers -- detected via __has_include of the BSEC interface header.
+#if defined(ARDUINO)
 #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
 #define UNIT_BME688_USING_BSEC2
+#endif
+#elif __has_include(<inc/bsec_interface.h>)
+#define UNIT_BME688_USING_BSEC2
+#endif
 
+#if defined(UNIT_BME688_USING_BSEC2)
 #if defined(ARDUINO)
 #include <bsec2.h>
 #else
 #include <inc/bsec_datatypes.h>
+// ESP-IDF native uses the raw BSEC API directly (no Arduino Bsec2 wrapper). The BME688 code relies
+// on two small helpers that the Arduino wrapper (bsec2.h) provides but the raw API headers do not;
+// define them here identically. BSEC_NUMBER_OUTPUTS comes from <inc/bsec_datatypes.h>.
+#ifndef BSEC_CHECK_INPUT
+#define BSEC_CHECK_INPUT(x, shift) (x & (1 << (shift - 1)))
 #endif
-
+typedef bsec_output_t bsecData;
+typedef struct {
+    bsecData output[BSEC_NUMBER_OUTPUTS];
+    uint8_t nOutputs;
+} bsecOutputs;
+#endif
 #endif
 
 #include <memory>
@@ -227,7 +246,12 @@ void is_bsec_virtual_sensor_t()
 }
 ///@endcond
 
-//! @brief  Conversion from BSEC2 subscription array to bits
+/*!
+  @brief Conversion from BSEC2 subscription array to bits
+  @param ss Array of requested virtual sensor (output) configurations for the library
+  @param len Number of array elements
+  @return Subscription bits
+ */
 inline uint32_t virtual_sensor_array_to_bits(const bsec_virtual_sensor_t* ss, const size_t len)
 {
     uint32_t ret{};
@@ -239,6 +263,8 @@ inline uint32_t virtual_sensor_array_to_bits(const bsec_virtual_sensor_t* ss, co
 
 /*!
   @brief Make subscribe bits from bsec_virtual_sensor_t
+  @param args bsec_virtual_sensor_t values
+  @return Subscription bits
  */
 template <typename... Args>
 uint32_t subscribe_to_bits(Args... args)
@@ -616,6 +642,8 @@ public:
     bool writeCalibration(const bme688::bme68xCalibration& c);
     /*!
       @brief Calculation of measurement intervals without heater
+      @param mode Mode for measurement
+      @param s Sensor configuration
       @return interval time (Unit: us)
     */
     uint32_t calculateMeasurementInterval(const bme688::Mode mode, const bme688::bme68xConf& s);
@@ -755,6 +783,7 @@ public:
     /*!
       @brief Start periodic measurement using BSEC2
       @param subscribe_bits Measurement type bits
+      @param sr Sample rate
       @return True if successful
       @warning Not available for NanoC6
     */
@@ -767,6 +796,7 @@ public:
       @brief Start periodic measurement using BSEC2
       @param ss Array of requested virtual sensor (output) configurations for the library
       @param len Number of array elements
+      @param sr Sample rate
       @return True if successful
       @warning Not available for NanoC6
     */
@@ -797,15 +827,22 @@ public:
       @note Measure once by Force mode
       @note Blocked until it can be measured.
     */
-    bool measureSingleShot(bme688::bme68xData& data);
+    bool measureSingleshot(bme688::bme68xData& data);
+    //! @brief Take a single measurement
+    //! @deprecated Use measureSingleshot instead
+    [[deprecated("Use measureSingleshot")]] inline bool measureSingleShot(bme688::bme68xData& data)
+    {
+        return measureSingleshot(data);
+    }
     ///@}
 
 #if defined(UNIT_BME688_USING_BSEC2) || defined(DOXYGEN_PROCESS)
-    ///@warning Not available for NanoC6
     ///@name Bosch BSEC2 wrapper
     ///@{
     /*!
       @brief Gets the temperature offset(Celsius)
+      @return Temperature offset(Celsius)
+      @warning Not available for NanoC6
      */
     float bsec2GetTemperatureOffset() const
     {

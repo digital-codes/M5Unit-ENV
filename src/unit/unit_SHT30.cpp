@@ -261,12 +261,19 @@ bool UnitSHT30::softReset()
         return false;
     }
 
-    if (writeRegister(SOFT_RESET)) {
-        // Max 1.5 ms
-        // Time between ACK of soft reset command and sensor entering idle
-        // state
-        m5::utility::delay(2);
-        return true;
+    // The soft-reset write is typically the 2nd back-to-back command after stopPeriodicMeasurement; on slow /
+    // marginal buses (ESP32-C6 LP_I2C, IDF 5.2+ new I2C master driver) that 2nd transaction can return
+    // ESP_ERR_INVALID_STATE. Retry a few times with a short gap, like readSerialNumber()
+    // (see skill m5-i2c-c6-constraint / m5-esp32p4-i2c-invalid-state).
+    for (uint_fast8_t i = 0; i < 3; ++i) {
+        if (writeRegister(SOFT_RESET)) {
+            // Max 1.5 ms
+            // Time between ACK of soft reset command and sensor entering idle
+            // state
+            m5::utility::delay(2);
+            return true;
+        }
+        m5::utility::delay(1);
     }
     return false;
 }
@@ -317,13 +324,20 @@ bool UnitSHT30::readSerialNumber(uint32_t& serialNumber)
     }
 
     std::array<uint8_t, 6> rbuf;
-    if (readRegister(GET_SERIAL_NUMBER_DISABLE_STRETCH, rbuf.data(), rbuf.size(), 1)) {
-        m5::types::big_uint16_t u16[2]{{rbuf[0], rbuf[1]}, {rbuf[3], rbuf[4]}};
-        m5::utility::CRC8_Checksum crc{};
-        if (crc.range(u16[0].data(), u16[0].size()) == rbuf[2] && crc.range(u16[1].data(), u16[1].size()) == rbuf[5]) {
-            serialNumber = ((uint32_t)u16[0].get()) << 16 | ((uint32_t)u16[1].get());
-            return true;
+    // No-clock-stretch read: the sensor NACKs / returns stale data until ready, so poll by re-issuing the
+    // command a few times. A single read fails for consecutive serial reads on slow buses (e.g. ESP32-H2
+    // Ex_I2C), where the 2nd back-to-back read lands before the sensor is ready.
+    for (uint_fast8_t i = 0; i < 3; ++i) {
+        if (readRegister(GET_SERIAL_NUMBER_DISABLE_STRETCH, rbuf.data(), rbuf.size(), 1)) {
+            m5::types::big_uint16_t u16[2]{{rbuf[0], rbuf[1]}, {rbuf[3], rbuf[4]}};
+            m5::utility::CRC8_Checksum crc{};
+            if (crc.range(u16[0].data(), u16[0].size()) == rbuf[2] &&
+                crc.range(u16[1].data(), u16[1].size()) == rbuf[5]) {
+                serialNumber = ((uint32_t)u16[0].get()) << 16 | ((uint32_t)u16[1].get());
+                return true;
+            }
         }
+        m5::utility::delay(1);
     }
     return false;
 }

@@ -1,0 +1,11 @@
+description: >-
+  Build-time downloader for the Bosch BSEC2 prebuilt library (libalgobsec.a) and its headers/config.
+  No Bosch bytes are vendored in this repository. When CONFIG_M5UNIT_ENV_ENABLE_BSEC2=y the recipe
+  fetches the upstream package at configure time; enabling it constitutes acceptance of the Bosch
+  BSEC license. The prebuilt blob exists only for these targets.
+version: "0.1.0"
+targets:
+  - esp32
+  - esp32s2
+  - esp32s3
+  - esp32c3

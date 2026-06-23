@@ -61,26 +61,32 @@ jobs:
           - UnitENVIV
           - UnitENVPro
           - UnitTVOC
+          - UnitMiniBPS11
 
         board:
-          - Core
-          - Core2
-          - CoreS3
-          - Fire
-          - StampS3
-          - Dial
-          - Atom
-          - AtomS3
-          - AtomS3R
-          - NanoC6
-          - StickCPlus
-          - StickCPlus2
-          - StickS3
-          - Paper
-          - CoreInk
-          - Cardputer
-          - Tab5
-          - NessoN1
+          # Build-safe minimal set: one board per distinct compile config
+          # (toolchain x chip arch x deps). Sibling boards differ only by
+          # variant header and are commented out (re-enable to also catch
+          # variant-specific build breaks).
+          - Core              # espressif32 / ESP32 (bsec2 included)
+          # - Core2           # ESP32: represented by Core
+          - CoreS3            # espressif32 / ESP32-S3
+          # - Fire            # ESP32: represented by Core
+          # - StampS3         # ESP32-S3: represented by CoreS3
+          # - Dial            # ESP32-S3: represented by CoreS3
+          # - Atom            # ESP32: represented by Core
+          # - AtomS3          # ESP32-S3: represented by CoreS3
+          # - AtomS3R         # ESP32-S3: represented by CoreS3
+          - NanoC6            # pioarduino / ESP32-C6 (bsec2 excluded)
+          - NanoH2            # pioarduino / ESP32-H2
+          # - StickCPlus      # ESP32: represented by Core (Hat built via include)
+          # - StickCPlus2     # ESP32: represented by Core
+          # - StickS3         # ESP32-S3: represented by CoreS3
+          # - Paper           # ESP32: represented by Core (Paper.cpp built via include)
+          # - CoreInk         # ESP32: represented by Core
+          # - Cardputer       # ESP32-S3: represented by CoreS3
+          - Tab5              # pioarduino / ESP32-P4 (16MB part, bsec2 excluded)
+          # - NessoN1         # ESP32-C6: represented by NanoC6 (Wire1 built via include)
 
         framework:
           - Arduino
@@ -97,27 +103,27 @@ jobs:
             board: Paper
             framework: Arduino
             espressif32: latest
-          # HatENV3
+          # HatENV3 (addHatI2C branch): build on both platforms
           - example: PlotToSerial
             unit: HatENVIII
             board: StickCPlus
             framework: Arduino
             espressif32: latest
-          - example: PlotToSerial
-            unit: HatENVIII
-            board: StickCPlus2
-            framework: Arduino
-            espressif32: latest
-          - example: PlotToSerial
-            unit: HatENVIII
-            board: StickS3
-            framework: Arduino
-            espressif32: latest
-          - example: PlotToSerial
-            unit: HatENVIII
-            board: CoreInk
-            framework: Arduino
-            espressif32: latest
+          # - example: PlotToSerial      # StickCPlus2: represented by StickCPlus
+          #   unit: HatENVIII
+          #   board: StickCPlus2
+          #   framework: Arduino
+          #   espressif32: latest
+          # - example: PlotToSerial      # StickS3: represented by StickCPlus
+          #   unit: HatENVIII
+          #   board: StickS3
+          #   framework: Arduino
+          #   espressif32: latest
+          # - example: PlotToSerial      # CoreInk: represented by StickCPlus
+          #   unit: HatENVIII
+          #   board: CoreInk
+          #   framework: Arduino
+          #   espressif32: latest
           - example: PlotToSerial
             unit: HatENVIII
             board: NessoN1
@@ -129,11 +135,11 @@ jobs:
             board: StickCPlus
             framework: Arduino
             espressif32: latest
-          - example: HatYunEnvironmentGlow
-            unit: HatYun
-            board: StickCPlus2
-            framework: Arduino
-            espressif32: latest
+          # - example: HatYunEnvironmentGlow   # StickCPlus2: represented by StickCPlus
+          #   unit: HatYun
+          #   board: StickCPlus2
+          #   framework: Arduino
+          #   espressif32: latest
 
 
     steps:

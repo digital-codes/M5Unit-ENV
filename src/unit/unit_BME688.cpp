@@ -207,7 +207,7 @@ bool UnitBME688::begin()
     auto ret  = bsec_init();
     auto vret = bsec_get_version(&_bsec2_version);
     if (ret != BSEC_OK || vret != BSEC_OK) {
-        M5_LIB_LOGE("Failed to bsec_init or gert_version %d/%d", ret, vret);
+        M5_LIB_LOGE("Failed to bsec_init or get_version %d/%d", ret, vret);
         return false;
     }
     M5_LIB_LOGI("bsec2 version:%u.%u.%u.%u", _bsec2_version.major, _bsec2_version.minor, _bsec2_version.major_bugfix,
@@ -349,7 +349,8 @@ void UnitBME688::update_bsec2(const bool force)
             do {
                 auto& d = _raw_data[idx];
                 if (d.status & BME68X_GASM_VALID_MSK) {
-                    d.pressure *= 0.01f;  // Conversion from Pa to hPa
+                    // Keep pressure in Pa: BSEC2 expects BSEC_INPUT_PRESSURE in Pa, and raw data is stored in Pa
+                    // (matching the non-BSEC path and the documented unit of raw_pressure())
                     Data data{};
                     if (!process_data(data.raw_outputs, now_ns, d)) {
                         M5_LIB_LOGE("Failed to process_data");
@@ -712,7 +713,7 @@ uint32_t UnitBME688::calculateMeasurementInterval(const bme688::Mode mode, const
     return bme68x_get_meas_dur(m5::stl::to_underlying(mode), const_cast<struct bme68x_conf*>(&s), &_dev);
 }
 
-bool UnitBME688::measureSingleShot(bme688::bme68xData& data)
+bool UnitBME688::measureSingleshot(bme688::bme68xData& data)
 {
     data = {};
 

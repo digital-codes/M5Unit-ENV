@@ -10,6 +10,7 @@
 #include <Wire.h>
 #include <M5Unified.h>
 #include <M5UnitUnified.hpp>
+#include <M5Utility.hpp>
 #include <googletest/test_template.hpp>
 #include <googletest/test_helper.hpp>
 #include <unit/unit_SHT20.hpp>
@@ -75,8 +76,8 @@ protected:
 
 namespace {
 
-// SHT20 CRC-8 reference implementation for test verification
-// polynomial x^8 + x^5 + x^4 + 1 = 0x131, init = 0x00
+// SHT20 CRC-8 reference implementation (polynomial x^8 + x^5 + x^4 + 1 = 0x31, init 0x00),
+// used to verify that m5::utility::CRC8 is configured correctly for SHT20.
 uint8_t crc8_sht20(const uint8_t* data, size_t len)
 {
     uint8_t crc = 0x00;
@@ -97,6 +98,24 @@ void check_measurement_values(UnitSHT20* u)
 }
 
 }  // namespace
+
+// Verify the SHT20 CRC-8 configuration matches the reference implementation.
+// SHT20 uses polynomial 0x31 with init 0x00 (SHT30/SHT40 use init 0xFF), so this guards
+// against the CRC parameters drifting away from the SHT20 specification.
+TEST(UnitSHT20CRC, Verify)
+{
+    m5::utility::CRC8 crc_sht20(0x00, 0x31, false, false, 0x00);
+
+    const uint8_t patterns[][2] = {
+        {0x00, 0x00}, {0xBE, 0xEF}, {0xDC, 0x00}, {0xFF, 0xFF}, {0x12, 0x34}, {0xA5, 0x5A},
+    };
+    for (auto&& p : patterns) {
+        EXPECT_EQ(crc_sht20.range(p, 2), crc8_sht20(p, 2));
+    }
+
+    const uint8_t seq[] = {0x68, 0x3A, 0x71};
+    EXPECT_EQ(crc_sht20.range(seq, sizeof(seq)), crc8_sht20(seq, sizeof(seq)));
+}
 
 TEST_F(TestSHT20, SingleShot)
 {

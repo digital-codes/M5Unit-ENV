@@ -23,7 +23,7 @@ namespace {
 constexpr uint8_t lower_limit_version{0x20};
 // constexpr elapsed_time_t BASELINE_INTERVAL{1000 * 60 * 60};  // 1 hour (ms)
 
-inline bool delayMeasurementDuration(const uint16_t ms)
+inline bool delay_measurement_duration(const uint16_t ms)
 {
     m5::utility::delay(ms);
     return true;
@@ -123,7 +123,8 @@ bool UnitSGP30::start_periodic_measurement(const uint32_t interval, const uint32
     }
 
     if (interval < sgp30::MEASURE_IAQ_DURATION) {
-        M5_LIB_LOGE("Interval too short %u. Must ne greater equal %u", interval, sgp30::MEASURE_IAQ_DURATION);
+        M5_LIB_LOGE("Interval too short %u. Must be greater than or equal to %u", interval,
+                    sgp30::MEASURE_IAQ_DURATION);
         return false;
     }
 
@@ -202,7 +203,7 @@ bool UnitSGP30::writeAbsoluteHumidity(const uint16_t raw, const uint32_t duratio
     m5::types::big_uint16_t rr(raw);
     std::memcpy(buf.data(), rr.data(), 2);
     buf[2] = crc.range(rr.data(), 2);
-    return writeRegister(SET_ABSOLUTE_HUMIDITY, buf.data(), buf.size()) && delayMeasurementDuration(duration);
+    return writeRegister(SET_ABSOLUTE_HUMIDITY, buf.data(), buf.size()) && delay_measurement_duration(duration);
 }
 
 bool UnitSGP30::writeAbsoluteHumidity(const float gm3, const uint32_t duration)
@@ -261,7 +262,7 @@ bool UnitSGP30::writeTvocInceptiveBaseline(const uint16_t inceptive_tvoc, const 
     m5::types::big_uint16_t tt(inceptive_tvoc);
     std::memcpy(buf.data(), tt.data(), 2);
     buf[2] = crc.range(tt.data(), 2);
-    return writeRegister(SET_TVOC_INCEPTIVE_BASELINE, buf.data(), buf.size()) && delayMeasurementDuration(duration);
+    return writeRegister(SET_TVOC_INCEPTIVE_BASELINE, buf.data(), buf.size()) && delay_measurement_duration(duration);
 }
 #endif
 

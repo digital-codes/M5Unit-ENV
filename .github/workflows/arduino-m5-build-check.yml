@@ -68,38 +68,45 @@ jobs:
           - UnitENVIV
           - UnitTVOC
           - UnitENVPro
+          - UnitMiniBPS11
 
+        # Reduced to distinct compile configs (toolchain x chip-arch + distinct build-property boards).
+        # Pure variant-header siblings (same chip-arch, same build property) are commented out;
+        # they compile identically because library code branches at runtime via M5.getBoard().
         board:
-          - arduino_nesso_n1
-          - m5stack_atom
-          - m5stack_atoms3
-          - m5stack_atoms3r
-          - m5stack_capsule
-          - m5stack_cardputer
+          - m5stack_core        # ESP32 representative (xtensa-esp32, bsec2 included)
+          - m5stack_cores3      # ESP32-S3 representative (xtensa-esp32s3)
+          - m5stack_nano_c6     # ESP32-C6 representative (rv32, IDF5.x, bsec2 excluded)
+          - m5stack_nano_h2    # ESP32-H2 representative (rv32, H2 image target, bsec2 excluded)
+          - m5stack_tab5        # ESP32-P4 representative (rv32 single-float FPU, bsec2 excluded)
+          # Distinct build-property boards (PSRAM / OPI flash / USB-CDC differ from cores3) - kept
+          - m5stack_atoms3r     # ESP32-S3 with distinct PSRAM/memory_type build property
+          - m5stack_cardputer   # ESP32-S3 with distinct PSRAM/USB build property
+          - m5stack_papers3     # ESP32-S3 with distinct PSRAM/EPD build property
+          - m5stack_sticks3     # ESP32-S3 with distinct build property
+          - m5stack_stamp_s3    # ESP32-S3 StampS3 with distinct build property
+          # M5 fork exclusive board not present in espressif package - distinct config, kept
+          - arduino_nesso_n1    # ESP32-C6 NessoN1 (M5 fork exclusive)
+          # Pure variant-header siblings (commented out)
+#          - m5stack_atom        # ESP32: represented by m5stack_core
+#          - m5stack_atoms3      # ESP32-S3: represented by m5stack_cores3
+#          - m5stack_capsule     # ESP32: represented by m5stack_core
 #          - m5stack_chain_dualkey
-          - m5stack_core
-          - m5stack_core2
-          - m5stack_coreink
-          - m5stack_cores3
-          - m5stack_dial
-          - m5stack_dinmeter
-          - m5stack_fire
-          - m5stack_nano_c6
-#          - m5stack_nano_h2
-          - m5stack_paper
-          - m5stack_papers3
+#          - m5stack_core2       # ESP32: represented by m5stack_core
+#          - m5stack_coreink     # ESP32: represented by m5stack_core
+#          - m5stack_dial        # ESP32-S3: represented by m5stack_cores3
+#          - m5stack_dinmeter    # ESP32-S3: represented by m5stack_cores3
+#          - m5stack_fire        # ESP32: represented by m5stack_core
+#          - m5stack_paper       # ESP32: represented by m5stack_core (built separately via Paper sketch include below)
 #          - m5stack_poe_cam
 #          - m5stack_powerhub
 #          - m5stack_stamp_c3
 #          - m5stack_stamp_pico
-          - m5stack_stamp_s3
 #          - m5stack_stamplc
 #          - m5stack_station
-          - m5stack_stickc
-          - m5stack_stickc_plus
-          - m5stack_stickc_plus2
-          - m5stack_sticks3
-          - m5stack_tab5
+#          - m5stack_stickc      # ESP32: represented by m5stack_core
+#          - m5stack_stickc_plus # ESP32: represented by m5stack_core
+#          - m5stack_stickc_plus2 # ESP32: represented by m5stack_core
 #          - m5stack_timer_cam
 #          - m5stack_tough
 #          - m5stack_unit_c6l

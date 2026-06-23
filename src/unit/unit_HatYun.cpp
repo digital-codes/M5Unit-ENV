@@ -9,6 +9,7 @@
 */
 #include "unit_HatYun.hpp"
 #include <M5Utility.hpp>
+#include <algorithm>
 
 namespace m5 {
 namespace unit {
@@ -26,6 +27,10 @@ HatYun::HatYun(const uint8_t addr) : Component(addr), _data{new m5::container::C
 {
     auto cfg         = component_config();
     cfg.max_children = 2;
+    // Children share the parent's single bus clock (ensure_adapter duplicates this adapter), so set it
+    // from the children. Use min so the shared bus never exceeds the slowest child's rating; without this
+    // the parent falls back to the base default (100kHz) and the children run slower than intended.
+    cfg.clock = std::min(sht20.component_config().clock, bmp280.component_config().clock);
     component_config(cfg);
     _valid = add(sht20, 0) && add(bmp280, 1);
 }

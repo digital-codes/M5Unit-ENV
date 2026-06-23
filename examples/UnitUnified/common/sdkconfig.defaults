@@ -1,0 +1,39 @@
+# Shared ESP-IDF defaults for the M5Unit-ENV UnitUnified examples.
+# Referenced by each example's project CMakeLists.txt via SDKCONFIG_DEFAULTS.
+
+# Optimize for size (-Os) like Arduino-ESP32 (ESP-IDF default is -Og). Matches how M5Unified/M5GFX
+# are normally built, avoiding -O2-only false-positive warnings. Independent of NDEBUG/logging.
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# Keep upstream warnings as warnings (Kconfig default: y on IDF 5.4/5.5, n on 6.0+). Pin to y.
+CONFIG_COMPILER_DISABLE_DEFAULT_ERRORS=y
+
+# ESP32 classic only: M5Unified falls back to the legacy touch_sensor.h API (the new
+# driver/touch_sens.h is not on its include path), emitting a deprecation #warning. Harmless by
+# default, but a hard error under -Werror. Suppress it. Key exists only on touch-capable targets
+# (esp32/s2/s3); ignored on C3/C6/H2/P4.
+CONFIG_TOUCH_SUPPRESS_DEPRECATE_WARN=y
+
+# Flash size: 4MB is a safe default for M5Stack boards. Override per board if needed (see README).
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="4MB"
+
+# Enable PSRAM where present. IGNORE_NOTFOUND lets boards WITHOUT PSRAM still boot. Default mode is
+# Quad; OCTAL-PSRAM boards (some ESP32-S3) MUST override with CONFIG_SPIRAM_MODE_OCT=y (see README).
+# Targets with no PSRAM interface (C3/C6/H2) ignore these.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+
+# Match Arduino-ESP32 for consistent behavior across the two build systems:
+# max CPU clock (Arduino default)
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+# 1 ms tick: finer delay()/vTaskDelay() granularity
+CONFIG_FREERTOS_HZ=1000
+# like Arduino's loop task stack
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Run app_main()/loop() on Core 1 (APP_CPU) like Arduino's loopTask, then stop watchdogging IDLE1:
+# the tight loop() can starve IDLE1 as under Arduino. IDLE0 stays watched. Dual-core only;
+# single-core SoCs (ESP32-C3/C6/H2/S2) ignore these (the example yields in app_main instead).
+CONFIG_ESP_MAIN_TASK_AFFINITY_CPU1=y
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU1=n

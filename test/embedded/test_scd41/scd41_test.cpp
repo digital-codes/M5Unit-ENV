@@ -13,6 +13,7 @@
 #include <googletest/test_template.hpp>
 #include <googletest/test_helper.hpp>
 #include <unit/unit_SCD41.hpp>
+#include <unit/unit_SCD4x_detail.hpp>
 #include <chrono>
 #include <iostream>
 
@@ -42,6 +43,31 @@ namespace {
 }  // namespace
 
 #include "../scd4x_test.inl"
+
+// Regression for issue #38: get_sensor_variant (0x202F) must identify the variant by word[0] bits[15..12]
+// only; bits[11..0] may differ per unit (datasheet CD_DS_SCD4x §3.10.6). A unit reporting 0x1441 (instead of
+// the canonical 0x1440) shares the same high byte 0x14 and must still be accepted as SCD41.
+TEST_F(TestSCD4x, SensorVariant)
+{
+    using namespace m5::unit::scd4x::detail;
+
+    // is_valid_chip() identifies the variant from var[0] (= get_sensor_variant word[0] bits[15..8]).
+    // Mirror that extraction here over full word[0] values, including the issue #38 value 0x1441:
+    // every SCD41 word[0] (canonical 0x1440 and the reported 0x1441) must be accepted, low bits ignored.
+    for (const uint16_t word0 : {(uint16_t)0x1440, (uint16_t)0x1441, (uint16_t)0x14FF}) {
+        const uint8_t high_byte = static_cast<uint8_t>(word0 >> 8);  // == var[0]
+        EXPECT_TRUE(is_sensor_variant(high_byte, VARIANT_NIBBLE_SCD41)) << "word0=" << std::hex << word0;
+    }
+    // Other variants' word[0] must be rejected as SCD41
+    for (const uint16_t word0 : {(uint16_t)0x0440, (uint16_t)0x5441}) {  // SCD40 / SCD43
+        EXPECT_FALSE(is_sensor_variant(static_cast<uint8_t>(word0 >> 8), VARIANT_NIBBLE_SCD41))
+            << "word0=" << std::hex << word0;
+    }
+
+    // The connected sensor was accepted by is_valid_chip() during fixture begin() (otherwise setup would have
+    // failed and this test would not run); the fixture starts with periodic measurement disabled.
+    EXPECT_FALSE(unit->inPeriodic());
+}
 
 TEST_F(TestSCD4x, Singleshot)
 {

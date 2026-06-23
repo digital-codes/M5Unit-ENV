@@ -124,6 +124,12 @@ constexpr UseCaseSetting uc_val_table[] = {
     {OversamplingSetting::UltraHighAccuracy, Filter::Coeff32},
 };
 
+// Force-mode measurement time [ms] per OversamplingSetting (datasheet QMP6988 1.6
+// "Characteristics by Oversampling setting", measurement time Typ, rounded up).
+// At short standby the actual cadence is bound by this conversion time, not interval().
+// Index matches OversamplingSetting: HighSpeed/LowPower/Standard/HighAccuracy/UltraHighAccuracy.
+constexpr uint32_t measure_time_table[] = {6, 8, 11, 19, 34};
+
 }  // namespace
 
 TEST_F(TestQMP6988, Settings)
@@ -433,18 +439,24 @@ TEST_F(TestQMP6988, Periodic)
             EXPECT_TRUE(unit->startPeriodicMeasurement());
             EXPECT_TRUE(unit->inPeriodic());
 
-            // interval() can be as small as 1ms for short standby
-            M5_LOGI("Periodic: %s interval:%lu ms", s.c_str(), unit->interval());
-            uint32_t timeout = is_bus ? std::max<uint32_t>(unit->interval(), 500) * (STORED_SIZE + 1) * 4
-                                      : unit->interval() * (STORED_SIZE + 1);
-            auto r           = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
+            // interval() returns only the standby time (as small as 1ms); at short standby the actual
+            // cadence is bound by the QMP6988 conversion time (datasheet 1.6, force-mode measurement
+            // time). Use the larger of the two so timeout/median tolerance match reality (slow CPUs
+            // such as ESP32-H2 otherwise time out before STORED_SIZE samples at 1ms standby).
+            uint32_t measure = measure_time_table[m5::stl::to_underlying(val.osrss)];
+            uint32_t cycle   = std::max<uint32_t>(measure, unit->interval());
+            M5_LOGI("Periodic: %s interval:%lu measure:%lu cycle:%lu ms", s.c_str(), (unsigned long)unit->interval(),
+                    (unsigned long)measure, (unsigned long)cycle);
+            uint32_t timeout =
+                is_bus ? std::max<uint32_t>(cycle, 500) * (STORED_SIZE + 1) * 4 : cycle * (STORED_SIZE + 1);
+            auto r = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
 
             EXPECT_TRUE(unit->stopPeriodicMeasurement());
             EXPECT_FALSE(unit->inPeriodic());
 
             EXPECT_FALSE(r.timed_out);
             EXPECT_EQ(r.update_count, STORED_SIZE);
-            EXPECT_LE(r.median(), r.expected_interval + (is_bus ? 5U : 1U));
+            EXPECT_LE(r.median(), cycle + (is_bus ? 5U : 1U));
 
             Oversampling t;
             Oversampling p;

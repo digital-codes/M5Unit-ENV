@@ -91,14 +91,17 @@ bool UnitSHT40::begin()
         }
     }
 
-    uint32_t sn{};
-    if (!readSerialNumber(sn)) {
-        M5_LIB_LOGE("Failed to readSerialNumber %x", sn);
+    // Soft reset first so the initial I2C transaction is a write (warms up the bus). The CRC-checked
+    // readSerialNumber as the very first transaction can intermittently NO_ACK on ESP32-C6/H2 Ex_I2C
+    // (skill m5-i2c-c6-constraint); doing the reset first mirrors UnitSHT30's robust begin order.
+    if (!softReset()) {
+        M5_LIB_LOGE("Failed to reset");
         return false;
     }
 
-    if (!softReset()) {
-        M5_LIB_LOGE("Failed to reset");
+    uint32_t sn{};
+    if (!readSerialNumber(sn)) {
+        M5_LIB_LOGE("Failed to readSerialNumber %x", sn);
         return false;
     }
 

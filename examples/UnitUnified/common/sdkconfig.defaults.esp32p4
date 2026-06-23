@@ -1,0 +1,8 @@
+# ESP32-P4 (e.g. M5Tab5) chip-revision support.
+# Applied automatically for the esp32p4 target alongside common/sdkconfig.defaults.
+#
+# IDF v5.5+ defaults the P4 minimum chip revision to v3.1 (REV_MIN_301), rejecting early P4 silicon
+# (M5Tab5 reports v1.0). Enable pre-v3 selection and lower the minimum to v0.0. On IDF versions
+# without these keys they are ignored (with a warning).
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
+CONFIG_ESP32P4_REV_MIN_0=y
