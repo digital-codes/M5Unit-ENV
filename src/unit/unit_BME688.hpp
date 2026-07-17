@@ -19,11 +19,12 @@
 #include <bme68x/bme68x.h>
 #endif
 
-// Enable BSEC2 (IAQ) only where the prebuilt blob exists. Arduino: esp32/s3/c3 (unchanged). ESP-IDF
-// native: only when the in-repo components/bsec2 recipe is enabled (CONFIG_M5UNIT_ENV_ENABLE_BSEC2)
-// and has exposed its headers -- detected via __has_include of the BSEC interface header.
+// Enable BSEC2 (IAQ) only where the prebuilt blob exists and the headers are actually available.
+// Arduino users opt in by installing boschsensortec/bsec2. ESP-IDF native users opt in via
+// CONFIG_M5UNIT_ENV_ENABLE_BSEC2, which makes the in-repo components/bsec2 recipe expose headers.
 #if defined(ARDUINO)
-#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3)
+#if __has_include(<bsec2.h>) && \
+    (defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3))
 #define UNIT_BME688_USING_BSEC2
 #endif
 #elif __has_include(<inc/bsec_interface.h>)
