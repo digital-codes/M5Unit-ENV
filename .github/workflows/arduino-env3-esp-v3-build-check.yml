@@ -2,7 +2,7 @@ name: Build ENVIII(arduino-esp32:3.x)
 
 env:
   SKETCH_NAMES_FIND_START: ./examples/UnitUnified/UnitENVIII
-  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,BME68x Sensor library,bsec2
+  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,BME68x Sensor library
 
 on:
   push:

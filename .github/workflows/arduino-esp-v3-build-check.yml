@@ -2,7 +2,7 @@ name: Build(arduino-esp32:3.x)
 
 env:
   SKETCH_NAMES_FIND_START: ./examples/UnitUnified
-  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,BME68x Sensor library,bsec2
+  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,BME68x Sensor library
 
 on:
   push:
@@ -82,14 +82,14 @@ jobs:
 #          - m5stack_atoms3     # ESP32-S3: represented by m5stack_cores3
 #          - m5stack_capsule    # ESP32-S3: represented by m5stack_cores3
           - m5stack_cardputer   # ESP32-S3: kept (distinct build properties)
-          - m5stack_core        # ESP32 (bsec2 included)
+          - m5stack_core        # ESP32 (BSEC2 not installed by default)
 #          - m5stack_core2      # ESP32: represented by m5stack_core
 #          - m5stack_coreink    # ESP32: represented by m5stack_core
           - m5stack_cores3      # ESP32-S3
 #          - m5stack_dial       # ESP32-S3: represented by m5stack_cores3
 #          - m5stack_dinmeter   # ESP32-S3: represented by m5stack_cores3
 #          - m5stack_fire       # ESP32: represented by m5stack_core
-          - m5stack_nanoc6      # ESP32-C6 (bsec2 excluded)
+          - m5stack_nanoc6      # ESP32-C6 (no BSEC2 prebuilt)
 #          - m5stack_paper      # ESP32: represented by m5stack_core (Paper.cpp built via include)
 #          - m5stack_poe_cam
 #          - m5stack_stamp_c3
@@ -99,7 +99,7 @@ jobs:
 #          - m5stack_stickc
 #          - m5stack_stickc_plus    # ESP32: represented by m5stack_core (Hat built via include)
 #          - m5stack_stickc_plus2   # ESP32: represented by m5stack_core
-          - m5stack_tab5        # ESP32-P4 (16MB part, bsec2 excluded)
+          - m5stack_tab5        # ESP32-P4 (16MB part, no BSEC2 prebuilt)
 #          - m5stack_timer_cam
 #          - m5stack_tough
 #          - m5stack_unit_cam

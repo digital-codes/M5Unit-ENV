@@ -2,7 +2,7 @@ name: Build(arduino-m5stack)
 
 env:
   SKETCH_NAMES_FIND_START: ./examples/UnitUnified
-  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,BME68x Sensor library,bsec2
+  REQUIRED_LIBRARIES: M5Unified,M5UnitUnified,BME68x Sensor library
 
 on:
   push:
@@ -74,11 +74,11 @@ jobs:
         # Pure variant-header siblings (same chip-arch, same build property) are commented out;
         # they compile identically because library code branches at runtime via M5.getBoard().
         board:
-          - m5stack_core        # ESP32 representative (xtensa-esp32, bsec2 included)
+          - m5stack_core        # ESP32 representative (xtensa-esp32, BSEC2 not installed by default)
           - m5stack_cores3      # ESP32-S3 representative (xtensa-esp32s3)
-          - m5stack_nano_c6     # ESP32-C6 representative (rv32, IDF5.x, bsec2 excluded)
-          - m5stack_nano_h2    # ESP32-H2 representative (rv32, H2 image target, bsec2 excluded)
-          - m5stack_tab5        # ESP32-P4 representative (rv32 single-float FPU, bsec2 excluded)
+          - m5stack_nano_c6     # ESP32-C6 representative (rv32, IDF5.x, no BSEC2 prebuilt)
+          - m5stack_nano_h2    # ESP32-H2 representative (rv32, H2 image target, no BSEC2 prebuilt)
+          - m5stack_tab5        # ESP32-P4 representative (rv32 single-float FPU, no BSEC2 prebuilt)
           # Distinct build-property boards (PSRAM / OPI flash / USB-CDC differ from cores3) - kept
           - m5stack_atoms3r     # ESP32-S3 with distinct PSRAM/memory_type build property
           - m5stack_cardputer   # ESP32-S3 with distinct PSRAM/USB build property
@@ -182,4 +182,3 @@ jobs:
           libraries: ${{ steps.libs.outputs.yaml }}
           sketch-paths: |
             - ${{ env.SKETCH_NAMES_FIND_START }}/${{ matrix.unit }}/${{ matrix.sketch }}
-
