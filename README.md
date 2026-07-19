@@ -57,13 +57,13 @@ Hat Yun is a cloud-shaped multifunctional environmental information collection b
 
 ENVPro (BME688) additionally needs the Bosch libraries:
 - [Bosch-BME68x-Library](https://github.com/boschsensortec/Bosch-BME68x-Library) — raw temperature / pressure / humidity / gas (all targets)
-- [Bosch-BSEC2-Library](https://github.com/boschsensortec/Bosch-BSEC2-Library) — air-quality (IAQ) output, optional; install it only when using BME688 IAQ. The Bosch prebuilt exists only for ESP32 / ESP32-S2 / ESP32-S3 (excluded on ESP32-C6 [NanoC6 / NessoN1], ESP32-H2 [NanoH2], ESP32-P4 [Tab5])
+- [Bosch-BSEC2-Library](https://github.com/boschsensortec/Bosch-BSEC2-Library) — air-quality (IAQ) output, optional; install it only when using BME688 IAQ. On Arduino / PlatformIO, IAQ is enabled on ESP32 / ESP32-S3 (excluded on ESP32-C6 [NanoC6 / NessoN1], ESP32-H2 [NanoH2], ESP32-P4 [Tab5], where no Bosch prebuilt exists)
 
 On Arduino / PlatformIO, BME68x is installed as a library dependency. BSEC2 is not a required dependency; add `boschsensortec/bsec2` to your application `lib_deps` or install it with Arduino IDE Library Manager only when you use UnitENVPro IAQ APIs. On ESP-IDF native, BME68x is fetched at build time and BSEC2 is fetched only when you opt in for the ENVPro example (see [For ESP-IDF settings](#for-esp-idf-settings)).
 
 ### Enabling BSEC2 IAQ on Arduino / PlatformIO
 
-UnitENVPro works without BSEC2 and reports raw temperature, pressure, humidity, and gas resistance. To enable BSEC2 IAQ APIs such as `iaq()` and `bsec2Version()`, install the Bosch BSEC2 library explicitly on a supported target (ESP32 / ESP32-S2 / ESP32-S3):
+UnitENVPro works without BSEC2 and reports raw temperature, pressure, humidity, and gas resistance. To enable BSEC2 IAQ APIs such as `iaq()` and `bsec2Version()`, install the Bosch BSEC2 library explicitly on a supported target (ESP32 / ESP32-S3):
 
 ```ini
 lib_deps =
