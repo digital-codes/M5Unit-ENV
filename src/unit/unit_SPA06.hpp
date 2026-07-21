@@ -196,6 +196,7 @@ private:
     float _kp{};  // Set by start_periodic_measurement() before any compensation
     float _kt{};
     int32_t _seed_tmp_raw{};  // Temperature seeded once for pressure compensation in Mode::Pressure
+    uint8_t _tmp_ext{};       // MEAS_CFG TMP_EXT bit (0 or 0x08) matched to TMP_COEF_SRCE, OR'd into mode writes
     float _reference_hpa{1013.25f};
     uint32_t _pushed{}, _consumed{};
     std::unique_ptr<m5::container::CircularBuffer<spa06::Data>> _data{};
@@ -215,7 +216,8 @@ constexpr uint8_t REG_MEAS_CFG{0x08};  // bit7 COEF_RDY, bit6 SENSOR_RDY, bit5 T
 constexpr uint8_t REG_CFG_REG{0x09};   // bit3 TMP_SHIFT_EN, bit2 PRS_SHIFT_EN
 constexpr uint8_t REG_RESET{0x0C};
 constexpr uint8_t REG_ID{0x0D};
-constexpr uint8_t REG_COEF{0x10};  // 0x10..0x24 (21 bytes)
+constexpr uint8_t REG_COEF{0x10};       // 0x10..0x24 (21 bytes)
+constexpr uint8_t REG_COEF_SRCE{0x28};  // bit7 TMP_COEF_SRCE (0 internal / 1 external temperature sensor)
 ///@endcond
 }  // namespace command
 }  // namespace spa06

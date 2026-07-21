@@ -23,6 +23,7 @@ constexpr uint8_t SOFT_RESET{0x09};         // RESET(0x0C) SOFT_RST[3:0] = 1001b
 constexpr uint8_t MEAS_CTRL_STANDBY{0x00};  // MEAS_CFG(0x08) MEAS_CTRL[2:0] = idle/stop
 constexpr uint8_t P_SHIFT_BIT{0x04};        // CFG_REG(0x09) bit2 PRS_SHIFT_EN
 constexpr uint8_t T_SHIFT_BIT{0x08};        // CFG_REG(0x09) bit3 TMP_SHIFT_EN
+constexpr uint8_t MEAS_TMP_EXT_BIT{0x08};   // MEAS_CFG(0x08) bit3 TMP_EXT (external temperature sensor)
 constexpr uint8_t PRS_RDY_BIT{0x10};        // MEAS_CFG(0x08) bit4 PRS_RDY
 constexpr uint8_t TMP_RDY_BIT{0x20};        // MEAS_CFG(0x08) bit5 TMP_RDY
 constexpr uint8_t COEF_SENSOR_RDY_MASK{0xC0};
@@ -87,6 +88,13 @@ bool UnitSPA06::begin()
     }
     if (!read_coefficients()) {
         return false;
+    }
+
+    // Match the temperature sensor source to the one the factory calibration is for (COEF_SRCE bit7);
+    // a mismatch offsets temperature and, through it, compensated pressure (datasheet / DPS310 erratum).
+    uint8_t coef_srce{};
+    if (readRegister8(REG_COEF_SRCE, coef_srce, 0)) {
+        _tmp_ext = (coef_srce & 0x80) ? MEAS_TMP_EXT_BIT : 0;
     }
 
     return _cfg.start_periodic ? startPeriodicMeasurement(_cfg.mode, _cfg.pressure_oversampling,
@@ -172,7 +180,7 @@ bool UnitSPA06::seed_temperature()
     const uint8_t tmp_cfg = static_cast<uint8_t>((static_cast<uint8_t>(Rate::Rate1) << 4) |
                                                  static_cast<uint8_t>(_cfg.temperature_oversampling));
     if (!writeRegister8(REG_TMP_CFG, tmp_cfg) ||
-        !writeRegister8(REG_MEAS_CFG, static_cast<uint8_t>(Mode::Temperature))) {
+        !writeRegister8(REG_MEAS_CFG, static_cast<uint8_t>(static_cast<uint8_t>(Mode::Temperature) | _tmp_ext))) {
         M5_LIB_LOGE("Failed to start temperature seed");
         return false;
     }
@@ -246,12 +254,13 @@ bool UnitSPA06::start_periodic_measurement(const Mode mode, const Oversampling p
         return false;
     }
 
-    // Start the configured background measurement. Software I2C occasionally drops this single write, so
-    // verify it landed (MEAS_CTRL[2:0] reads back the mode) and retry.
-    bool started = false;
+    // Start the configured background measurement (with the matched TMP_EXT bit). Software I2C occasionally
+    // drops this single write, so verify it landed (MEAS_CTRL[2:0] reads back the mode) and retry.
+    const uint8_t meas = static_cast<uint8_t>(static_cast<uint8_t>(mode) | _tmp_ext);
+    bool started       = false;
     for (int i = 0; i < 5 && !started; ++i) {
         uint8_t st{};
-        if (writeRegister8(REG_MEAS_CFG, static_cast<uint8_t>(mode)) && readRegister8(REG_MEAS_CFG, st, 0) &&
+        if (writeRegister8(REG_MEAS_CFG, meas) && readRegister8(REG_MEAS_CFG, st, 0) &&
             (st & 0x07) == static_cast<uint8_t>(mode)) {
             started = true;
             break;
@@ -367,12 +376,13 @@ bool UnitSPA06::measure_singleshot(spa06::Data& d)
     }
 
     // Command-mode single-shot is unreliable on SPA06-003, so take one reading from a brief continuous P+T
-    // run. Verify the start write landed (software I2C occasionally drops it) and retry.
-    bool started = false;
+    // run (with the matched TMP_EXT bit). Verify the start write landed (software I2C drops it) and retry.
+    const uint8_t meas = static_cast<uint8_t>(static_cast<uint8_t>(Mode::PressureAndTemperature) | _tmp_ext);
+    bool started       = false;
     for (int i = 0; i < 5 && !started; ++i) {
         uint8_t st{};
-        if (writeRegister8(REG_MEAS_CFG, static_cast<uint8_t>(Mode::PressureAndTemperature)) &&
-            readRegister8(REG_MEAS_CFG, st, 0) && (st & 0x07) == static_cast<uint8_t>(Mode::PressureAndTemperature)) {
+        if (writeRegister8(REG_MEAS_CFG, meas) && readRegister8(REG_MEAS_CFG, st, 0) &&
+            (st & 0x07) == static_cast<uint8_t>(Mode::PressureAndTemperature)) {
             started = true;
             break;
         }
