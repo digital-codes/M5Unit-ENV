@@ -131,6 +131,53 @@ public:
                            const spa06::Oversampling temperature_oversampling = spa06::Oversampling::X1);
     ///@}
 
+    ///@name Settings
+    ///@{
+    /*!
+      @brief Read the oversampling
+      @param[out] pressure_oversampling Pressure oversampling
+      @param[out] temperature_oversampling Temperature oversampling
+      @return True if successful
+    */
+    bool readOversampling(spa06::Oversampling& pressure_oversampling, spa06::Oversampling& temperature_oversampling);
+    /*!
+      @brief Write the oversampling
+      @param pressure_oversampling Pressure oversampling
+      @param temperature_oversampling Temperature oversampling
+      @return True if successful
+      @warning During periodic measurement runs, an error is returned
+    */
+    bool writeOversampling(const spa06::Oversampling pressure_oversampling,
+                           const spa06::Oversampling temperature_oversampling);
+    /*!
+      @brief Write the pressure oversampling
+      @param pressure_oversampling Pressure oversampling
+      @return True if successful
+      @warning During periodic measurement runs, an error is returned
+    */
+    bool writeOversamplingPressure(const spa06::Oversampling pressure_oversampling);
+    /*!
+      @brief Write the temperature oversampling
+      @param temperature_oversampling Temperature oversampling
+      @return True if successful
+      @warning During periodic measurement runs, an error is returned
+    */
+    bool writeOversamplingTemperature(const spa06::Oversampling temperature_oversampling);
+    /*!
+      @brief Read the measurement rate
+      @param[out] rate Measurement rate
+      @return True if successful
+    */
+    bool readRate(spa06::Rate& rate);
+    /*!
+      @brief Write the measurement rate (pressure and temperature share the rate)
+      @param rate Measurement rate
+      @return True if successful
+      @warning During periodic measurement runs, an error is returned
+    */
+    bool writeRate(const spa06::Rate rate);
+    ///@}
+
 protected:
     bool start_periodic_measurement(const spa06::Mode mode, const spa06::Oversampling pressure_oversampling,
                                     const spa06::Oversampling temperature_oversampling, const spa06::Rate rate);

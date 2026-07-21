@@ -403,6 +403,98 @@ bool UnitSPA06::measure_singleshot(spa06::Data& d)
     return ok;
 }
 
+bool UnitSPA06::readOversampling(Oversampling& pressure_oversampling, Oversampling& temperature_oversampling)
+{
+    uint8_t prs{}, tmp{};
+    if (!readRegister8(REG_PRS_CFG, prs, 0) || !readRegister8(REG_TMP_CFG, tmp, 0)) {
+        return false;
+    }
+    pressure_oversampling    = static_cast<Oversampling>(prs & 0x07);  // PM_PRC[2:0] (nibble = enum value)
+    temperature_oversampling = static_cast<Oversampling>(tmp & 0x07);  // TM_PRC[2:0]
+    return true;
+}
+
+bool UnitSPA06::writeOversamplingPressure(const Oversampling pressure_oversampling)
+{
+    if (inPeriodic()) {
+        M5_LIB_LOGD("Periodic measurements are running");
+        return false;
+    }
+    uint8_t prs{}, cfg{};
+    if (!readRegister8(REG_PRS_CFG, prs, 0) || !readRegister8(REG_CFG_REG, cfg, 0)) {
+        return false;
+    }
+    prs = static_cast<uint8_t>((prs & 0xF0) | static_cast<uint8_t>(pressure_oversampling));  // keep the rate nibble
+    cfg = (pressure_oversampling > Oversampling::X8) ? static_cast<uint8_t>(cfg | P_SHIFT_BIT)
+                                                     : static_cast<uint8_t>(cfg & ~P_SHIFT_BIT);
+    if (!writeRegister8(REG_PRS_CFG, prs) || !writeRegister8(REG_CFG_REG, cfg)) {
+        return false;
+    }
+    _kp                        = spa06::scale_factor(pressure_oversampling);
+    _cfg.pressure_oversampling = pressure_oversampling;
+    return true;
+}
+
+bool UnitSPA06::writeOversamplingTemperature(const Oversampling temperature_oversampling)
+{
+    if (inPeriodic()) {
+        M5_LIB_LOGD("Periodic measurements are running");
+        return false;
+    }
+    uint8_t tmp{}, cfg{};
+    if (!readRegister8(REG_TMP_CFG, tmp, 0) || !readRegister8(REG_CFG_REG, cfg, 0)) {
+        return false;
+    }
+    tmp = static_cast<uint8_t>((tmp & 0xF0) | static_cast<uint8_t>(temperature_oversampling));  // keep the rate nibble
+    cfg = (temperature_oversampling > Oversampling::X8) ? static_cast<uint8_t>(cfg | T_SHIFT_BIT)
+                                                        : static_cast<uint8_t>(cfg & ~T_SHIFT_BIT);
+    if (!writeRegister8(REG_TMP_CFG, tmp) || !writeRegister8(REG_CFG_REG, cfg)) {
+        return false;
+    }
+    _kt                           = spa06::scale_factor(temperature_oversampling);
+    _cfg.temperature_oversampling = temperature_oversampling;
+    return true;
+}
+
+bool UnitSPA06::writeOversampling(const Oversampling pressure_oversampling, const Oversampling temperature_oversampling)
+{
+    if (inPeriodic()) {
+        M5_LIB_LOGD("Periodic measurements are running");
+        return false;
+    }
+    return writeOversamplingPressure(pressure_oversampling) && writeOversamplingTemperature(temperature_oversampling);
+}
+
+bool UnitSPA06::readRate(Rate& rate)
+{
+    uint8_t prs{};
+    if (!readRegister8(REG_PRS_CFG, prs, 0)) {
+        return false;
+    }
+    rate = static_cast<Rate>((prs >> 4) & 0x07);  // PM_RATE[2:0]
+    return true;
+}
+
+bool UnitSPA06::writeRate(const Rate rate)
+{
+    if (inPeriodic()) {
+        M5_LIB_LOGD("Periodic measurements are running");
+        return false;
+    }
+    uint8_t prs{}, tmp{};
+    if (!readRegister8(REG_PRS_CFG, prs, 0) || !readRegister8(REG_TMP_CFG, tmp, 0)) {
+        return false;
+    }
+    const uint8_t r = static_cast<uint8_t>(static_cast<uint8_t>(rate) << 4);
+    prs             = static_cast<uint8_t>((prs & 0x0F) | r);  // keep the PM_PRC nibble
+    tmp             = static_cast<uint8_t>((tmp & 0x0F) | r);  // keep the TM_PRC nibble
+    if (!writeRegister8(REG_PRS_CFG, prs) || !writeRegister8(REG_TMP_CFG, tmp)) {
+        return false;
+    }
+    _cfg.rate = rate;
+    return true;
+}
+
 float UnitSPA06::pressure() const
 {
     if (_cfg.mode == Mode::Temperature) {
