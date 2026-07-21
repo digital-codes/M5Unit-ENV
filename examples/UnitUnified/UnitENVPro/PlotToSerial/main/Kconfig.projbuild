@@ -4,7 +4,7 @@
 # show it. The components/bsec2 recipe reads CONFIG_M5UNIT_ENV_ENABLE_BSEC2 to decide whether to
 # download + link the Bosch prebuilt; M5Unit-ENV (root) requires bsec2 on the supported targets so
 # unit_BME688's IAQ path picks up the headers when enabled.
-menu "M5Unit-ENV BSEC2 (BME688 IAQ)"
+menu "M5Unit-ENV ENVPro example (BSEC2 / BME688 IAQ)"
 
 config M5UNIT_ENV_ENABLE_BSEC2
     bool "Enable BSEC2 (IAQ) for BME688 [downloads Bosch prebuilt; license acceptance required]"
