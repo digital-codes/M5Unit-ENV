@@ -16,35 +16,109 @@
 #include <array>
 #include <cstdint>
 #include <cmath>
+#include <limits>
 
 namespace m5 {
 namespace unit {
 namespace spa06 {
 
+/*!
+  @enum Oversampling
+  @brief Oversampling factor; the enum value is the PM_PRC/TM_PRC nibble (datasheet Table 4)
+ */
+enum class Oversampling : uint8_t {
+    X1,    //!< x1 (single, lowest precision)
+    X2,    //!< x2
+    X4,    //!< x4
+    X8,    //!< x8
+    X16,   //!< x16 (standard)
+    X32,   //!< x32
+    X64,   //!< x64
+    X128,  //!< x128 (highest precision)
+};
+
+/*!
+  @enum Rate
+  @brief Measurement rate; the enum value is the PM_RATE/TMP_RATE nibble (measurements per second)
+ */
+enum class Rate : uint8_t {
+    Rate1,    //!< 1 measurement/s
+    Rate2,    //!< 2 measurements/s
+    Rate4,    //!< 4 measurements/s
+    Rate8,    //!< 8 measurements/s
+    Rate16,   //!< 16 measurements/s
+    Rate32,   //!< 32 measurements/s
+    Rate64,   //!< 64 measurements/s
+    Rate128,  //!< 128 measurements/s
+};
+
+/*!
+  @enum Mode
+  @brief Continuous measurement type; the enum value is the MEAS_CFG MEAS_CTRL[2:0] background-mode code
+ */
+enum class Mode : uint8_t {
+    Pressure               = 0x05,  //!< Continuous pressure only (temperature() returns NaN)
+    Temperature            = 0x06,  //!< Continuous temperature only (pressure() returns NaN)
+    PressureAndTemperature = 0x07,  //!< Continuous pressure and temperature (both valid)
+};
+
 //! @brief Compensation scale factor kP/kT for an oversampling rate (datasheet Table 4)
-inline float scale_factor(const uint8_t oversampling)
+inline float scale_factor(const Oversampling oversampling)
 {
     switch (oversampling) {
-        case 1:
+        case Oversampling::X1:
             return 524288.0f;
-        case 2:
+        case Oversampling::X2:
             return 1572864.0f;
-        case 4:
+        case Oversampling::X4:
             return 3670016.0f;
-        case 8:
+        case Oversampling::X8:
             return 7864320.0f;
-        case 16:
+        case Oversampling::X16:
             return 253952.0f;
-        case 32:
+        case Oversampling::X32:
             return 516096.0f;
-        case 64:
+        case Oversampling::X64:
             return 1040384.0f;
-        case 128:
+        case Oversampling::X128:
             return 2088960.0f;
-        default:
-            return 253952.0f;  // 16x default
     }
+    return std::numeric_limits<float>::quiet_NaN();  // Out-of-range enum value
 }
+
+//! @brief Measurement time (ms x10) for an oversampling rate (datasheet Table 8), indexed by nibble
+inline uint32_t measurement_time_x10(const Oversampling oversampling)
+{
+    constexpr uint32_t t[] = {36, 52, 84, 148, 276, 532, 1044, 2068};
+    return t[static_cast<uint8_t>(oversampling)];
+}
+
+/*!
+  @brief True if a rate/oversampling/mode combination fits the datasheet timing budget
+  @details Background mode shares a 1-second timeline between pressure and temperature (single ADC).
+  The active measurement type(s) must fit: Rate x (sum of active measurement times) < 1 second
+  (datasheet 7.3 Note under Table 9). Pressure and temperature run at the same Rate in this driver.
+ */
+inline bool valid_combination(const Oversampling osrs_p, const Oversampling osrs_t, const Rate rate, const Mode mode)
+{
+    const uint32_t r = static_cast<uint32_t>(1) << static_cast<uint8_t>(rate);  // measurements per second
+    uint32_t budget_x10{};
+    switch (mode) {
+        case Mode::Pressure:
+            budget_x10 = measurement_time_x10(osrs_p);
+            break;
+        case Mode::Temperature:
+            budget_x10 = measurement_time_x10(osrs_t);
+            break;
+        case Mode::PressureAndTemperature:
+            budget_x10 = measurement_time_x10(osrs_p) + measurement_time_x10(osrs_t);
+            break;
+    }
+    return r * budget_x10 < 10000u;  // < 1000 ms (values are ms x10)
+}
+
+//! @brief Sentinel value of psr_raw()/tmp_raw() for a register not measured yet (reset value 0x800000)
+constexpr int32_t NOT_MEASURED{-8388608};
 
 //! @brief Sign-extend the low `bits` of `v` (2's complement)
 inline int32_t sign_extend(const uint32_t v, const uint8_t bits)

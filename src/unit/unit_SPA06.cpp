@@ -9,6 +9,7 @@
 */
 #include "unit_SPA06.hpp"
 #include <M5Utility.hpp>
+#include <limits>
 
 using namespace m5::utility::mmh3;
 using namespace m5::unit::types;
@@ -19,38 +20,14 @@ namespace {
 // ID (0x0D) reset value is 0x11h (datasheet Table 7 / Sec 7.10): REV_ID[7:4]=1, PROD_ID[3:0]=1.
 constexpr uint8_t PROD_ID_VALUE{0x01};
 constexpr uint8_t SOFT_RESET{0x09};         // RESET(0x0C) SOFT_RST[3:0] = 1001b (datasheet Sec 7.9)
-constexpr uint8_t MEAS_CTRL_CONT_PT{0x07};  // MEAS_CFG(0x08) MEAS_CTRL[2:0] = continuous P+T
 constexpr uint8_t MEAS_CTRL_STANDBY{0x00};  // MEAS_CFG(0x08) MEAS_CTRL[2:0] = idle/stop
 constexpr uint8_t P_SHIFT_BIT{0x04};        // CFG_REG(0x09) bit2 PRS_SHIFT_EN
 constexpr uint8_t T_SHIFT_BIT{0x08};        // CFG_REG(0x09) bit3 TMP_SHIFT_EN
+constexpr uint8_t PRS_RDY_BIT{0x10};        // MEAS_CFG(0x08) bit4 PRS_RDY
+constexpr uint8_t TMP_RDY_BIT{0x20};        // MEAS_CFG(0x08) bit5 TMP_RDY
 constexpr uint8_t COEF_SENSOR_RDY_MASK{0xC0};
-constexpr uint32_t POLL_INTERVAL_MS{20};  // ~50Hz poll of MEAS_CFG (measurement itself runs at the
-                                          // configured PM_RATE/TMP_RATE)
-
-// Map an oversampling value (1..128) to its PM_PRC/TM_PRC nibble (0..7, datasheet Table 4)
-uint8_t prc_bits(const uint8_t oversampling)
-{
-    switch (oversampling) {
-        case 1:
-            return 0;
-        case 2:
-            return 1;
-        case 4:
-            return 2;
-        case 8:
-            return 3;
-        case 16:
-            return 4;
-        case 32:
-            return 5;
-        case 64:
-            return 6;
-        case 128:
-            return 7;
-        default:
-            return 4;
-    }
-}
+// Measurement period (ms) per Rate = 1000 / (measurements per second), indexed by the Rate nibble
+constexpr uint32_t interval_table[] = {1000, 500, 250, 125, 62, 31, 15, 7};
 }  // namespace
 
 namespace m5 {
@@ -112,9 +89,9 @@ bool UnitSPA06::begin()
         return false;
     }
 
-    return _cfg.start_periodic
-               ? startPeriodicMeasurement(_cfg.pressure_oversampling, _cfg.temperature_oversampling, _cfg.rate)
-               : true;
+    return _cfg.start_periodic ? startPeriodicMeasurement(_cfg.mode, _cfg.pressure_oversampling,
+                                                          _cfg.temperature_oversampling, _cfg.rate)
+                               : true;
 }
 
 bool UnitSPA06::softReset()
@@ -161,36 +138,94 @@ void UnitSPA06::update(const bool force)
 
 bool UnitSPA06::read_measurement(spa06::Data& d)
 {
-    uint8_t st{};
-    if (!readRegister8(REG_MEAS_CFG, st, 0)) {
-        M5_LIB_LOGE("Failed to read status");
-        return false;
-    }
-    if ((st & 0x30) == 0) {
-        return false;  // Neither PRS_RDY nor TMP_RDY yet (normal, no log)
-    }
+    // Read the PSR+TMP data registers directly every _interval (no status/RDY gate), matching the other
+    // barometers (BMP280/QMP6988). A register that has not been measured yet reads the reset value
+    // 0x800000 (NOT_MEASURED); use that as the not-ready signal instead of polling MEAS_CFG.
     if (!readRegister(REG_PSR_B2, d.raw.data(), d.raw.size(), 0)) {
         M5_LIB_LOGE("Failed to read data");
         return false;
     }
-    return true;
+    const bool p_measured = d.psr_raw() != spa06::NOT_MEASURED;
+    const bool t_measured = d.tmp_raw() != spa06::NOT_MEASURED;
+
+    switch (_cfg.mode) {
+        case Mode::Pressure:
+            // Temperature is not measured continuously; supply the seeded traw for pressure compensation.
+            d.raw[3] = static_cast<uint8_t>(_seed_tmp_raw >> 16);
+            d.raw[4] = static_cast<uint8_t>(_seed_tmp_raw >> 8);
+            d.raw[5] = static_cast<uint8_t>(_seed_tmp_raw);
+            return p_measured;
+        case Mode::Temperature:
+            return t_measured;
+        case Mode::PressureAndTemperature:
+        default:
+            return p_measured && t_measured;
+    }
 }
 
-bool UnitSPA06::start_periodic_measurement(const uint8_t pressure_oversampling, const uint8_t temperature_oversampling,
-                                           const uint8_t rate)
+bool UnitSPA06::seed_temperature()
+{
+    // Prime traw for pressure compensation with one temperature reading. Single-shot (command mode)
+    // temperature does not reliably set TMP_RDY on SPA06-003, so use a brief continuous-temperature run
+    // (background mode, the proven-reliable path) at the lowest rate -- Rate1 x any oversampling always
+    // fits the 1 s budget -- and read the register directly (same NOT_MEASURED convention as periodic).
+    const uint8_t tmp_cfg = static_cast<uint8_t>((static_cast<uint8_t>(Rate::Rate1) << 4) |
+                                                 static_cast<uint8_t>(_cfg.temperature_oversampling));
+    if (!writeRegister8(REG_TMP_CFG, tmp_cfg) ||
+        !writeRegister8(REG_MEAS_CFG, static_cast<uint8_t>(Mode::Temperature))) {
+        M5_LIB_LOGE("Failed to start temperature seed");
+        return false;
+    }
+
+    // The first continuous measurement completes after the temperature measurement time (<=206.8 ms).
+    const uint32_t timeout_ms = spa06::measurement_time_x10(_cfg.temperature_oversampling) / 10 * 2 + 200;
+    const auto start          = m5::utility::millis();
+    bool ok                   = false;
+    while (m5::utility::millis() - start < timeout_ms) {
+        m5::utility::delay(5);
+        std::array<uint8_t, 3> t{};
+        if (!readRegister(REG_TMP_B2, t.data(), t.size(), 0)) {
+            continue;
+        }
+        const int32_t traw =
+            spa06::sign_extend((static_cast<uint32_t>(t[0]) << 16) | (static_cast<uint32_t>(t[1]) << 8) | t[2], 24);
+        if (traw != spa06::NOT_MEASURED) {
+            _seed_tmp_raw = traw;
+            ok            = true;
+            break;
+        }
+    }
+    // Stop the seed measurement so the caller can start the requested mode from standby.
+    writeRegister8(REG_MEAS_CFG, MEAS_CTRL_STANDBY);
+    if (!ok) {
+        M5_LIB_LOGE("Temperature seed timed out");
+    }
+    return ok;
+}
+
+bool UnitSPA06::start_periodic_measurement(const Mode mode, const Oversampling pressure_oversampling,
+                                           const Oversampling temperature_oversampling, const Rate rate)
 {
     if (inPeriodic()) {
         return false;
     }
 
-    const uint8_t prs_cfg = static_cast<uint8_t>((rate << 4) | prc_bits(pressure_oversampling));
-    const uint8_t tmp_cfg = static_cast<uint8_t>((rate << 4) | prc_bits(temperature_oversampling));
+    // Reject combinations that exceed the datasheet timing budget before touching any register.
+    if (!spa06::valid_combination(pressure_oversampling, temperature_oversampling, rate, mode)) {
+        M5_LIB_LOGE("Combination exceeds the measurement time budget (datasheet 7.3)");
+        return false;
+    }
+
+    // The enum value is the PM_PRC/TM_PRC (oversampling) and PM_RATE/TMP_RATE (rate) nibble directly.
+    const uint8_t rate_bits = static_cast<uint8_t>(rate);
+    const uint8_t prs_cfg   = static_cast<uint8_t>((rate_bits << 4) | static_cast<uint8_t>(pressure_oversampling));
+    const uint8_t tmp_cfg   = static_cast<uint8_t>((rate_bits << 4) | static_cast<uint8_t>(temperature_oversampling));
     uint8_t cfg_reg{};
     // The datasheet requires the SHIFT bit to be enabled whenever oversampling exceeds 8x.
-    if (pressure_oversampling > 8) {
+    if (pressure_oversampling > Oversampling::X8) {
         cfg_reg |= P_SHIFT_BIT;
     }
-    if (temperature_oversampling > 8) {
+    if (temperature_oversampling > Oversampling::X8) {
         cfg_reg |= T_SHIFT_BIT;
     }
     if (!writeRegister8(REG_PRS_CFG, prs_cfg) || !writeRegister8(REG_TMP_CFG, tmp_cfg) ||
@@ -204,20 +239,67 @@ bool UnitSPA06::start_periodic_measurement(const uint8_t pressure_oversampling, 
     _cfg.pressure_oversampling    = pressure_oversampling;
     _cfg.temperature_oversampling = temperature_oversampling;
     _cfg.rate                     = rate;
+    _cfg.mode                     = mode;
 
-    // Start continuous pressure + temperature background measurement.
-    if (!writeRegister8(REG_MEAS_CFG, MEAS_CTRL_CONT_PT)) {
+    // Pressure-only mode never measures temperature, so seed traw once for pressure compensation.
+    if (mode == Mode::Pressure && !seed_temperature()) {
         return false;
     }
+
+    // Start the configured background measurement. Software I2C occasionally drops this single write, so
+    // verify it landed (MEAS_CTRL[2:0] reads back the mode) and retry.
+    bool started = false;
+    for (int i = 0; i < 5 && !started; ++i) {
+        uint8_t st{};
+        if (writeRegister8(REG_MEAS_CFG, static_cast<uint8_t>(mode)) && readRegister8(REG_MEAS_CFG, st, 0) &&
+            (st & 0x07) == static_cast<uint8_t>(mode)) {
+            started = true;
+            break;
+        }
+        m5::utility::delay(5);
+    }
+    if (!started) {
+        M5_LIB_LOGE("Failed to start measurement");
+        return false;
+    }
+
+    // Prime once: the data registers can still hold the previous configuration's result. Discard it (which
+    // also clears any stale RDY), then wait -- one-time poll, not a per-read gate -- for a measurement taken
+    // with the current settings, so the first periodic read never compensates a leftover raw with the new
+    // scale factor. RDY is reliable in background mode (unlike the single-shot command path).
+    {
+        const uint8_t rdy = (mode == Mode::Pressure)      ? PRS_RDY_BIT
+                            : (mode == Mode::Temperature) ? TMP_RDY_BIT
+                                                          : static_cast<uint8_t>(PRS_RDY_BIT | TMP_RDY_BIT);
+        std::array<uint8_t, 6> discard{};
+        readRegister(REG_PSR_B2, discard.data(), discard.size(), 0);
+        // Worst case: the discard clears RDY right after a cycle, so wait up to one rate period plus a
+        // measurement time (x2 margin) for the next completion.
+        const uint32_t period = interval_table[m5::stl::to_underlying(rate)];
+        const uint32_t budget = period +
+                                (spa06::measurement_time_x10(pressure_oversampling) +
+                                 spa06::measurement_time_x10(temperature_oversampling)) /
+                                    10 * 2 +
+                                200;
+        const auto pstart = m5::utility::millis();
+        while (m5::utility::millis() - pstart < budget) {
+            uint8_t st{};
+            if (readRegister8(REG_MEAS_CFG, st, 0) && (st & rdy) == rdy) {
+                break;
+            }
+            m5::utility::delay(5);
+        }
+    }
+
     _periodic = true;
-    _latest   = 0;
-    _interval = POLL_INTERVAL_MS;
+    _latest   = 0;  // fresh data is now in the registers; the first update() reads it
+    _interval = interval_table[m5::stl::to_underlying(rate)];
     return true;
 }
 
 bool UnitSPA06::start_periodic_measurement()
 {
-    return start_periodic_measurement(_cfg.pressure_oversampling, _cfg.temperature_oversampling, _cfg.rate);
+    return start_periodic_measurement(_cfg.mode, _cfg.pressure_oversampling, _cfg.temperature_oversampling, _cfg.rate);
 }
 
 bool UnitSPA06::stop_periodic_measurement()
@@ -227,10 +309,10 @@ bool UnitSPA06::stop_periodic_measurement()
     return true;
 }
 
-bool UnitSPA06::startPeriodicMeasurement(const uint8_t pressure_oversampling, const uint8_t temperature_oversampling,
-                                         const uint8_t rate)
+bool UnitSPA06::startPeriodicMeasurement(const Mode mode, const Oversampling pressure_oversampling,
+                                         const Oversampling temperature_oversampling, const Rate rate)
 {
-    return PeriodicMeasurementAdapter<UnitSPA06, spa06::Data>::startPeriodicMeasurement(pressure_oversampling,
+    return PeriodicMeasurementAdapter<UnitSPA06, spa06::Data>::startPeriodicMeasurement(mode, pressure_oversampling,
                                                                                         temperature_oversampling, rate);
 }
 
@@ -246,6 +328,9 @@ bool UnitSPA06::stopPeriodicMeasurement()
 
 float UnitSPA06::pressure() const
 {
+    if (_cfg.mode == Mode::Temperature) {
+        return std::numeric_limits<float>::quiet_NaN();  // Pressure is not measured in temperature-only mode
+    }
     if (!_data || _data->empty()) {
         return 0.0f;
     }
@@ -258,6 +343,9 @@ float UnitSPA06::pressure() const
 
 float UnitSPA06::temperature() const
 {
+    if (_cfg.mode == Mode::Pressure) {
+        return std::numeric_limits<float>::quiet_NaN();  // Seeded traw is internal; not a user reading
+    }
     if (!_data || _data->empty()) {
         return 0.0f;
     }
