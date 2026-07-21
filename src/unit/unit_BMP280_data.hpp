@@ -142,7 +142,11 @@ private:
  */
 struct Data {
     std::array<uint8_t, 6> raw{};  //!< RAW data [0,1,2]:pressure [3,4,5]:temperature
-    const Trimming* trimming{};    //!< For calculate
+    //! @brief Points to the owning unit's calibration for compensation
+    //! @note The calibration is read once in begin() and never changes, so this pointer stays valid for
+    //! the unit's lifetime (a nullptr means "not backed by a unit" and yields NaN). Do not keep a copied
+    //! Data after the owning unit is destroyed.
+    const Trimming* trimming{};
 
     //! temperature (Celsius)
     inline float temperature() const
