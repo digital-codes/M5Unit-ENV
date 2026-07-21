@@ -393,3 +393,43 @@ TEST_F(TestSPA06, MeasureSingleshot)
     Data d2{};
     EXPECT_FALSE(unit->measureSingleshot(d2));
 }
+
+TEST_F(TestSPA06, SettingsAccessors)
+{
+    SCOPED_TRACE(ustr);
+
+    using namespace m5::unit::spa06;
+
+    EXPECT_TRUE(unit->stopPeriodicMeasurement());
+
+    // Oversampling round-trip (combined + individual)
+    EXPECT_TRUE(unit->writeOversampling(Oversampling::X32, Oversampling::X4));
+    Oversampling p{}, t{};
+    EXPECT_TRUE(unit->readOversampling(p, t));
+    EXPECT_EQ(p, Oversampling::X32);
+    EXPECT_EQ(t, Oversampling::X4);
+
+    EXPECT_TRUE(unit->writeOversamplingPressure(Oversampling::X8));
+    EXPECT_TRUE(unit->writeOversamplingTemperature(Oversampling::X16));
+    EXPECT_TRUE(unit->readOversampling(p, t));
+    EXPECT_EQ(p, Oversampling::X8);
+    EXPECT_EQ(t, Oversampling::X16);
+
+    // Rate round-trip; writing the rate preserves the oversampling nibbles
+    EXPECT_TRUE(unit->writeRate(Rate::Rate8));
+    Rate r{};
+    EXPECT_TRUE(unit->readRate(r));
+    EXPECT_EQ(r, Rate::Rate8);
+    EXPECT_TRUE(unit->readOversampling(p, t));
+    EXPECT_EQ(p, Oversampling::X8);
+    EXPECT_EQ(t, Oversampling::X16);
+
+    // Writes are rejected while periodic runs; reads still work
+    EXPECT_TRUE(unit->startPeriodicMeasurement());
+    EXPECT_TRUE(unit->inPeriodic());
+    EXPECT_FALSE(unit->writeOversampling(Oversampling::X1, Oversampling::X1));
+    EXPECT_FALSE(unit->writeOversamplingPressure(Oversampling::X1));
+    EXPECT_FALSE(unit->writeRate(Rate::Rate1));
+    EXPECT_TRUE(unit->readOversampling(p, t));
+    EXPECT_TRUE(unit->readRate(r));
+}
