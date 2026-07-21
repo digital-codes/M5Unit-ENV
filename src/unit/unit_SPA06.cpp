@@ -326,6 +326,83 @@ bool UnitSPA06::stopPeriodicMeasurement()
     return PeriodicMeasurementAdapter<UnitSPA06, spa06::Data>::stopPeriodicMeasurement();
 }
 
+bool UnitSPA06::measureSingleshot(spa06::Data& d, const Oversampling pressure_oversampling,
+                                  const Oversampling temperature_oversampling)
+{
+    if (inPeriodic()) {
+        M5_LIB_LOGD("Periodic measurements are running");
+        return false;
+    }
+    // Configure P+T at the lowest rate (a single reading; Rate1 x any oversampling always fits the budget).
+    const uint8_t rate_bits = static_cast<uint8_t>(Rate::Rate1);
+    const uint8_t prs_cfg   = static_cast<uint8_t>((rate_bits << 4) | static_cast<uint8_t>(pressure_oversampling));
+    const uint8_t tmp_cfg   = static_cast<uint8_t>((rate_bits << 4) | static_cast<uint8_t>(temperature_oversampling));
+    uint8_t cfg_reg{};
+    if (pressure_oversampling > Oversampling::X8) {
+        cfg_reg |= P_SHIFT_BIT;
+    }
+    if (temperature_oversampling > Oversampling::X8) {
+        cfg_reg |= T_SHIFT_BIT;
+    }
+    if (!writeRegister8(REG_PRS_CFG, prs_cfg) || !writeRegister8(REG_TMP_CFG, tmp_cfg) ||
+        !writeRegister8(REG_CFG_REG, cfg_reg)) {
+        M5_LIB_LOGE("Failed to configure");
+        return false;
+    }
+    if (!measure_singleshot(d)) {
+        return false;
+    }
+    // Stamp the compensation inputs by value so the returned Data is self-contained.
+    d.coeffs = _coeffs;
+    d.kp     = spa06::scale_factor(pressure_oversampling);
+    d.kt     = spa06::scale_factor(temperature_oversampling);
+    return true;
+}
+
+bool UnitSPA06::measure_singleshot(spa06::Data& d)
+{
+    if (inPeriodic()) {
+        M5_LIB_LOGD("Periodic measurements are running");
+        return false;
+    }
+
+    // Command-mode single-shot is unreliable on SPA06-003, so take one reading from a brief continuous P+T
+    // run. Verify the start write landed (software I2C occasionally drops it) and retry.
+    bool started = false;
+    for (int i = 0; i < 5 && !started; ++i) {
+        uint8_t st{};
+        if (writeRegister8(REG_MEAS_CFG, static_cast<uint8_t>(Mode::PressureAndTemperature)) &&
+            readRegister8(REG_MEAS_CFG, st, 0) && (st & 0x07) == static_cast<uint8_t>(Mode::PressureAndTemperature)) {
+            started = true;
+            break;
+        }
+        m5::utility::delay(5);
+    }
+    if (!started) {
+        M5_LIB_LOGE("Failed to start measurement");
+        return false;
+    }
+
+    // Discard any result left over from a previous configuration, then wait for a fresh coherent P+T pair.
+    std::array<uint8_t, 6> discard{};
+    readRegister(REG_PSR_B2, discard.data(), discard.size(), 0);
+    bool ok             = false;
+    const auto start_at = m5::utility::millis();
+    while (m5::utility::millis() - start_at < 2 * 1000) {  // 2s cap
+        m5::utility::delay(5);
+        uint8_t st{};
+        if (readRegister8(REG_MEAS_CFG, st, 0) && (st & (PRS_RDY_BIT | TMP_RDY_BIT)) == (PRS_RDY_BIT | TMP_RDY_BIT)) {
+            ok = readRegister(REG_PSR_B2, d.raw.data(), d.raw.size(), 0);
+            break;
+        }
+    }
+    writeRegister8(REG_MEAS_CFG, MEAS_CTRL_STANDBY);  // Return to standby
+    if (!ok) {
+        M5_LIB_LOGE("Singleshot timed out");
+    }
+    return ok;
+}
+
 float UnitSPA06::pressure() const
 {
     if (_cfg.mode == Mode::Temperature) {

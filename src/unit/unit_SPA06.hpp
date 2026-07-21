@@ -115,6 +115,22 @@ public:
     void setReference();
     ///@}
 
+    ///@name Single shot measurement
+    ///@{
+    /*!
+      @brief Measure pressure and temperature a single shot
+      @param[out] d Measured data (self-contained: read d.pressure()/d.temperature())
+      @param pressure_oversampling Pressure oversampling
+      @param temperature_oversampling Temperature oversampling
+      @return True if successful
+      @warning During periodic measurement runs, an error is returned; call stopPeriodicMeasurement() first
+      @note Blocks until the measurement completes. SPA06-003 command-mode single-shot is unreliable, so this
+      takes one reading from a brief continuous run; it does not disturb the periodic configuration
+    */
+    bool measureSingleshot(spa06::Data& d, const spa06::Oversampling pressure_oversampling = spa06::Oversampling::X16,
+                           const spa06::Oversampling temperature_oversampling = spa06::Oversampling::X1);
+    ///@}
+
 protected:
     bool start_periodic_measurement(const spa06::Mode mode, const spa06::Oversampling pressure_oversampling,
                                     const spa06::Oversampling temperature_oversampling, const spa06::Rate rate);
@@ -122,6 +138,7 @@ protected:
     bool seed_temperature();
     bool stop_periodic_measurement();
     bool read_measurement(spa06::Data& d);
+    bool measure_singleshot(spa06::Data& d);
     bool read_coefficients();
 
     M5_UNIT_COMPONENT_PERIODIC_MEASUREMENT_ADAPTER_HPP_BUILDER(UnitSPA06, spa06::Data);

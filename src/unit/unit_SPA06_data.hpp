@@ -182,6 +182,13 @@ inline float altitude_m(const float pressure_hpa, const float sea_level_hpa)
  */
 struct Data {
     std::array<uint8_t, 6> raw{};  //!< @brief PSR B2/B1/B0 + TMP B2/B1/B0
+    //! @brief Calibration coefficients for compensation
+    //! @note Stored by value (self-contained): unlike BMP280/QMP6988 whose calibration never changes,
+    //! kP/kT below change with the oversampling of each measurement, so a pointer to unit state would go
+    //! stale. Held all-by-value so a Data stays valid regardless of later config changes or unit lifetime.
+    coeffs_t coeffs{};
+    float kp{};  //!< @brief Pressure scale factor kP at measurement time (0 = not populated)
+    float kt{};  //!< @brief Temperature scale factor kT at measurement time (0 = not populated)
 
     //! @brief Raw pressure (24-bit 2's complement)
     inline int32_t psr_raw() const
@@ -192,6 +199,29 @@ struct Data {
     inline int32_t tmp_raw() const
     {
         return sign_extend((static_cast<uint32_t>(raw[3]) << 16) | (static_cast<uint32_t>(raw[4]) << 8) | raw[5], 24);
+    }
+    //! @brief Compensated temperature (Celsius); NaN if not populated/measured
+    inline float temperature() const
+    {
+        return (kt != 0.0f && tmp_raw() != NOT_MEASURED) ? compensate_temperature(tmp_raw(), coeffs, kt)
+                                                         : std::numeric_limits<float>::quiet_NaN();
+    }
+    //! @brief Compensated temperature (Celsius)
+    inline float celsius() const
+    {
+        return temperature();
+    }
+    //! @brief Compensated temperature (Fahrenheit)
+    inline float fahrenheit() const
+    {
+        return celsius() * 9.0f / 5.0f + 32.0f;
+    }
+    //! @brief Compensated pressure (hPa); NaN if not populated/measured
+    inline float pressure() const
+    {
+        return (kp != 0.0f && kt != 0.0f && psr_raw() != NOT_MEASURED)
+                   ? compensate_pressure(psr_raw(), tmp_raw(), coeffs, kp, kt) / 100.0f  // Pa -> hPa
+                   : std::numeric_limits<float>::quiet_NaN();
     }
 };
 
