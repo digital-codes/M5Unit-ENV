@@ -48,6 +48,33 @@ TEST(SPA06Data, CompensationMatchesReference)
     EXPECT_NEAR(compensate_pressure(0, 0, c, 253952.0f, 253952.0f), 100000.0f, 1e-3f);
 }
 
+TEST(SPA06Data, SelfContainedCompensation)
+{
+    // Data carries coeffs/kp/kt by value, so it compensates standalone (pressure in hPa).
+    Data d{};
+    d.coeffs.c00 = 100000;  // Pa
+    d.coeffs.c0  = 40;      // -> 20 C
+    d.kp         = 253952.0f;
+    d.kt         = 253952.0f;  // raw stays all-zero
+    EXPECT_NEAR(d.temperature(), 20.0f, 1e-3f);
+    EXPECT_NEAR(d.celsius(), 20.0f, 1e-3f);
+    EXPECT_NEAR(d.fahrenheit(), 68.0f, 1e-2f);
+    EXPECT_NEAR(d.pressure(), 1000.0f, 1e-3f);  // 100000 Pa -> 1000 hPa
+
+    // Unpopulated Data (kp/kt == 0) -> NaN, not a bogus compensated value
+    Data e{};
+    EXPECT_TRUE(std::isnan(e.pressure()));
+    EXPECT_TRUE(std::isnan(e.temperature()));
+
+    // NOT_MEASURED raw -> NaN even when populated
+    Data nm{};
+    nm.coeffs.c00 = 100000;
+    nm.kp = nm.kt = 253952.0f;
+    nm.raw        = {0x80, 0x00, 0x00, 0x80, 0x00, 0x00};  // psr/tmp = NOT_MEASURED
+    EXPECT_TRUE(std::isnan(nm.pressure()));
+    EXPECT_TRUE(std::isnan(nm.temperature()));
+}
+
 TEST(SPA06Data, AltitudeFormula)
 {
     // At sea-level pressure the relative altitude is ~0 m.

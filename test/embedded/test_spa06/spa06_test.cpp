@@ -366,3 +366,30 @@ TEST_F(TestSPA06, TemperatureOnlyMode)
     EXPECT_LT(celsius, 60.0f);
     EXPECT_TRUE(std::isnan(unit->pressure()));
 }
+
+TEST_F(TestSPA06, MeasureSingleshot)
+{
+    SCOPED_TRACE(ustr);
+
+    using namespace m5::unit::spa06;
+
+    EXPECT_TRUE(unit->stopPeriodicMeasurement());
+
+    // The returned Data is self-contained (carries coeffs/kp/kt): read it directly
+    Data d{};
+    EXPECT_TRUE(unit->measureSingleshot(d, Oversampling::X16, Oversampling::X2));
+    EXPECT_TRUE(std::isfinite(d.pressure()));
+    EXPECT_GT(d.pressure(), 300.0f);
+    EXPECT_LT(d.pressure(), 1100.0f);
+    EXPECT_TRUE(std::isfinite(d.temperature()));
+    EXPECT_GT(d.temperature(), -20.0f);
+    EXPECT_LT(d.temperature(), 60.0f);
+
+    // A single shot does not disturb periodic: it can still be started afterwards
+    EXPECT_TRUE(unit->startPeriodicMeasurement());
+    EXPECT_TRUE(unit->inPeriodic());
+
+    // Rejected while periodic is running
+    Data d2{};
+    EXPECT_FALSE(unit->measureSingleshot(d2));
+}
