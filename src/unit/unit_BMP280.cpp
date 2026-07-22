@@ -21,7 +21,6 @@ namespace {
 
 constexpr uint8_t CHIP_IDENTIFIER{0x58};
 constexpr uint8_t RESET_VALUE{0xB6};
-constexpr uint32_t NOT_MEASURED{0x800000};
 
 constexpr PowerMode mode_table[] = {PowerMode::Sleep, PowerMode::Forced, PowerMode::Forced,  // duplicated
                                     PowerMode::Normal
@@ -126,125 +125,10 @@ struct Config {
     uint8_t value{};
 };
 
-struct Calculator {
-    inline float temperature(const int32_t adc_P, const int32_t adc_T, const Trimming* t)
-    {
-        return t ? compensate_temperature_f(adc_T, *t) : std::numeric_limits<float>::quiet_NaN();
-    }
-    inline float pressure(const int32_t adc_P, const int32_t adc_T, const Trimming* t)
-    {
-        if (!t) {
-            return std::numeric_limits<float>::quiet_NaN();
-        }
-        if (t_fine == 0) {
-            (void)compensate_temperature_f(adc_T, *t);  // For t_fine
-        }
-        return compensate_pressure_f(adc_P, *t);
-    }
-
-private:
-    float compensate_temperature(const int32_t adc_T, const Trimming& trim)
-    {
-        int32_t var1{}, var2{};
-        var1 = ((((adc_T >> 3) - ((int32_t)trim.dig_T1 << 1))) * ((int32_t)trim.dig_T2)) >> 11;
-        var2 = (((((adc_T >> 4) - ((int32_t)trim.dig_T1)) * ((adc_T >> 4) - ((int32_t)trim.dig_T1))) >> 12) *
-                ((int32_t)trim.dig_T3)) >>
-               14;
-        t_fine  = var1 + var2;  // [*1]
-        float T = static_cast<float>((t_fine * 5 + 128) >> 8);
-        return T * 0.01f;
-    }
-
-    float compensate_pressure(const int32_t adc_P, const Trimming& trim)
-    {
-        int64_t var1{}, var2{}, p{};
-        var1 = ((int64_t)t_fine) - 128000;  // (*1) using it!
-        var2 = var1 * var1 * (int64_t)trim.dig_P6;
-        var2 = var2 + ((var1 * (int64_t)trim.dig_P5) << 17);
-        var2 = var2 + (((int64_t)trim.dig_P4) << 35);
-        var1 = ((var1 * var1 * (int64_t)trim.dig_P3) >> 8) + ((var1 * (int64_t)trim.dig_P2) << 12);
-        var1 = (((((int64_t)1) << 47) + var1)) * ((int64_t)trim.dig_P1) >> 33;
-        if (var1) {
-            p    = 1048576 - adc_P;
-            p    = (((p << 31) - var2) * 3125) / var1;
-            var1 = (((int64_t)trim.dig_P9) * (p >> 13) * (p >> 13)) >> 25;
-            var2 = (((int64_t)trim.dig_P8) * p) >> 19;
-            p    = ((p + var1 + var2) >> 8) + (((int64_t)trim.dig_P7) << 4);
-            return p / 256.f;
-        }
-        return 0.0f;
-    }
-
-    float compensate_temperature_f(const int32_t adc_T, const Trimming& trim)
-    {
-        float var1{}, var2{}, T{};
-        var1 = (((float)adc_T) / 16384.0f - ((float)trim.dig_T1) / 1024.0f) * ((float)trim.dig_T2);
-        var2 = ((((float)adc_T) / 131072.0f - ((float)trim.dig_T1) / 8192.0f) *
-                (((float)adc_T) / 131072.0f - ((float)trim.dig_T1) / 8192.0f)) *
-               ((float)trim.dig_T3);
-        t_fine = (int32_t)(var1 + var2);  // [*2]
-        T      = (var1 + var2) / 5120.0f;
-        return T;
-    }
-
-    float compensate_pressure_f(const int32_t adc_P, const Trimming& trim)
-    {
-        float var1{}, var2{}, P{};
-        var1 = ((float)t_fine / 2.0f) - 64000.0f;  // (*2)
-        var2 = var1 * var1 * ((float)trim.dig_P6) / 32768.0f;
-        var2 = var2 + var1 * ((float)trim.dig_P5) * 2.0f;
-        var2 = (var2 / 4.0f) + (((float)trim.dig_P4) * 65536.0f);
-        var1 = (((float)trim.dig_P3) * var1 * var1 / 524288.0f + ((float)trim.dig_P2) * var1) / 524288.0f;
-        var1 = (1.0f + var1 / 32768.0f) * ((float)trim.dig_P1);
-        if (var1 == 0.0f) {
-            return 0;
-        }
-        P    = 1048576.0f - (float)adc_P;
-        P    = (P - (var2 / 4096.0f)) * 6250.0f / var1;
-        var1 = ((float)trim.dig_P9) * P * P / 2147483648.0f;
-        var2 = P * ((float)trim.dig_P8) / 32768.0f;
-        P    = P + (var1 + var2 + ((float)trim.dig_P7)) / 16.0f;
-        return P;
-    }
-
-    ////
-
-    int32_t t_fine{};
-};
 }  // namespace
 
 namespace m5 {
 namespace unit {
-namespace bmp280 {
-
-float Data::celsius() const
-{
-    int32_t adc_P = (int32_t)(((uint32_t)raw[0] << 16) | ((uint32_t)raw[1] << 8) | ((uint32_t)raw[2]));
-    int32_t adc_T = (int32_t)(((uint32_t)raw[3] << 16) | ((uint32_t)raw[4] << 8) | ((uint32_t)raw[5]));
-    Calculator c{};
-
-    // adc_T is NOT_MEASURED if orsr Skipped (Not measured)
-    return (adc_T != NOT_MEASURED) ? c.temperature(adc_P >> 4, adc_T >> 4, trimming)
-                                   : std::numeric_limits<float>::quiet_NaN();
-}
-
-float Data::fahrenheit() const
-{
-    return celsius() * 9.0f / 5.0f + 32.f;
-}
-
-float Data::pressure() const
-{
-    int32_t adc_P = (int32_t)(((uint32_t)raw[0] << 16) | ((uint32_t)raw[1] << 8) | ((uint32_t)raw[2]));
-    int32_t adc_T = (int32_t)(((uint32_t)raw[3] << 16) | ((uint32_t)raw[4] << 8) | ((uint32_t)raw[5]));
-    Calculator c{};
-
-    // adc_T/P is NOT_MEASURED if orsr Skipped (Not measured)
-    return (adc_T != NOT_MEASURED && adc_P != NOT_MEASURED) ? c.pressure(adc_P >> 4, adc_T >> 4, trimming)
-                                                            : std::numeric_limits<float>::quiet_NaN();
-}
-
-}  // namespace bmp280
 
 const char UnitBMP280::name[] = "UnitBMP280";
 const types::uid_t UnitBMP280::uid{"UnitBMP280"_mmh3};
@@ -264,7 +148,7 @@ bool UnitBMP280::begin()
 
     uint8_t id{};
     if (!softReset() || !readRegister8(CHIP_ID, id, 0) || id != CHIP_IDENTIFIER) {
-        M5_LIB_LOGE("Can not detect BMP280 %02X", id);
+        M5_LIB_LOGE("Cannot detect BMP280 %02X", id);
         return false;
     }
 
@@ -590,7 +474,7 @@ bool UnitBMP280::read_measurement(bmp280::Data& d)
 
     // Datasheet says
     // Shadowing will only work if all data registers are read in a single burst read.
-    // Therefore, the user must use burst reads if he does not synchronize data readout with themeasurement cycle
+    // Therefore, the user must use burst reads if he does not synchronize data readout with the measurement cycle
     if (readRegister(GET_MEASUREMENT, d.raw.data(), d.raw.size(), 0)) {
         d.trimming = &_trimming;
         return true;

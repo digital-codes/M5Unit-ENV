@@ -18,6 +18,7 @@ on:
       - 'platformio.ini'
       - 'unit_*_env.ini'
       - 'hat_*_env.ini'
+      - 'test/**'
   pull_request:
     paths:
       - 'src/**'
@@ -30,6 +31,7 @@ on:
       - 'platformio.ini'
       - 'unit_*_env.ini'
       - 'hat_*_env.ini'
+      - 'test/**'
   workflow_dispatch:
 
 defaults:
@@ -68,7 +70,7 @@ jobs:
           # (toolchain x chip arch x deps). Sibling boards differ only by
           # variant header and are commented out (re-enable to also catch
           # variant-specific build breaks).
-          - Core              # espressif32 / ESP32 (bsec2 included)
+          - Core              # espressif32 / ESP32 (BSEC2 not installed by default)
           # - Core2           # ESP32: represented by Core
           - CoreS3            # espressif32 / ESP32-S3
           # - Fire            # ESP32: represented by Core
@@ -77,7 +79,7 @@ jobs:
           # - Atom            # ESP32: represented by Core
           # - AtomS3          # ESP32-S3: represented by CoreS3
           # - AtomS3R         # ESP32-S3: represented by CoreS3
-          - NanoC6            # pioarduino / ESP32-C6 (bsec2 excluded)
+          - NanoC6            # pioarduino / ESP32-C6 (no BSEC2 prebuilt)
           - NanoH2            # pioarduino / ESP32-H2
           # - StickCPlus      # ESP32: represented by Core (Hat built via include)
           # - StickCPlus2     # ESP32: represented by Core
@@ -85,7 +87,7 @@ jobs:
           # - Paper           # ESP32: represented by Core (Paper.cpp built via include)
           # - CoreInk         # ESP32: represented by Core
           # - Cardputer       # ESP32-S3: represented by CoreS3
-          - Tab5              # pioarduino / ESP32-P4 (16MB part, bsec2 excluded)
+          - Tab5              # pioarduino / ESP32-P4 (16MB part, no BSEC2 prebuilt)
           # - NessoN1         # ESP32-C6: represented by NanoC6 (Wire1 built via include)
 
         framework:
@@ -96,6 +98,18 @@ jobs:
 
 
         include:
+          # UnitENVPro with BSEC2 (IAQ): the opt-in _BSEC2 envs pull boschsensortec/bsec2 so the
+          # __has_include gate turns on. One board per Bosch prebuilt blob arch (esp32 / esp32s3).
+          - example: PlotToSerial
+            unit: UnitENVPro_BSEC2
+            board: Core
+            framework: Arduino
+            espressif32: latest
+          - example: PlotToSerial
+            unit: UnitENVPro_BSEC2
+            board: CoreS3
+            framework: Arduino
+            espressif32: latest
           # Specific sketches
           # Paper
           - example: Paper
@@ -165,3 +179,34 @@ jobs:
 #          silent: false
 #          verbose: true
 #          disable-auto-clean: false
+
+  # Runs the framework-independent unit_*_data.hpp tests on the host (no hardware required).
+  # Unlike the build jobs these actually EXECUTE (compensation math, golden vectors, parity
+  # with the frozen reference implementations).
+  native-test:
+    name: ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        environment:
+          - test_native_SPA06_data
+          - test_native_BMP280_data
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Run native tests
+        run: pio test -e ${{ matrix.environment }}

@@ -2,7 +2,7 @@ description: Library for M5Stack UNIT ENV using M5UnitUnified.
 url: https://github.com/m5stack/M5Unit-ENV
 issues: https://github.com/m5stack/M5Unit-ENV/issues
 license: MIT
-version: "1.5.0"
+version: "1.6.0"
 
 dependencies:
   idf: ">=5.0"
@@ -18,13 +18,14 @@ dependencies:
     path: components/bme68x
   # BSEC2 DL-recipe lives in this repo (no Bosch bytes). Pulled as a local path dependency so the
   # component manager adds it to the build graph (Kconfig visible in menuconfig). The Bosch prebuilt
-  # blob exists only for esp32/s2/s3/c3, so the dependency is gated to those targets -- on c6/h2/p4 it
-  # is not a dependency at all (declaring it unconditionally errors there: "does not support target").
-  # The DL+link only happens when CONFIG_M5UNIT_ENV_ENABLE_BSEC2=y (see components/bsec2).
+  # blob exists for esp32/s2/s3/c3; intersected with this library's targets (which do not include s2)
+  # the dependency is gated to esp32/s3/c3 -- on c6/h2/p4 it is not a dependency at all (declaring it
+  # unconditionally errors there: "does not support target"). The DL+link only happens when
+  # CONFIG_M5UNIT_ENV_ENABLE_BSEC2=y (see components/bsec2).
   bsec2:
     path: components/bsec2
     rules:
-      - if: "target in [esp32, esp32s2, esp32s3, esp32c3]"
+      - if: "target in [esp32, esp32s3, esp32c3]"
 
 targets:
   - esp32

@@ -84,6 +84,22 @@ TEST_F(TestSGP30, SelfTest)
     EXPECT_EQ(result, 0xD400);
 }
 
+TEST_F(TestSGP30, AbsoluteHumidity)
+{
+    SCOPED_TRACE(ustr);
+
+    // Reject invalid inputs before any I2C transaction: a negative value would wrap through the cast into a
+    // large raw humidity, and anything over the unsigned 8.8 range (255.996 g/m^3) overflows.
+    EXPECT_FALSE(unit->writeAbsoluteHumidity(-0.1f));
+    EXPECT_FALSE(unit->writeAbsoluteHumidity(-1.0f));
+    EXPECT_FALSE(unit->writeAbsoluteHumidity(256.0f));
+
+    // Accept the valid range, including 0 (disables compensation) and the upper bound
+    EXPECT_TRUE(unit->writeAbsoluteHumidity(0.0f));
+    EXPECT_TRUE(unit->writeAbsoluteHumidity(13.5f));
+    EXPECT_TRUE(unit->writeAbsoluteHumidity(255.99f));
+}
+
 TEST_F(TestSGP30, SerialNumber)
 {
     SCOPED_TRACE(ustr);

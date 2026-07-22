@@ -5,7 +5,7 @@
  */
 /*!
   @file unit_ENV4.cpp
-  @brief ENV 4 Unit for M5UnitUnified
+  @brief ENV IV Unit for M5UnitUnified
 */
 #include "unit_ENV4.hpp"
 #include <M5Utility.hpp>

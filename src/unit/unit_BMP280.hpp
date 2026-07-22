@@ -13,6 +13,7 @@
 #include <M5UnitComponent.hpp>
 #include <m5_utility/container/circular_buffer.hpp>
 #include <limits>  // NaN
+#include "unit_BMP280_data.hpp"
 
 namespace m5 {
 namespace unit {
@@ -96,49 +97,6 @@ enum class UseCase : uint8_t {
     Elevator,  //!< Elevator / floor change detection
     Drop,      //!< Drop detection
     Indoor,    //!< Indoor navigation
-};
-
-/*!
-  @union Trimming
-  @brief Trimming parameter
-*/
-union Trimming {
-    uint8_t value[12 * 2]{};
-    struct {
-        //
-        uint16_t dig_T1;
-        int16_t dig_T2;
-        int16_t dig_T3;
-        //
-        uint16_t dig_P1;
-        int16_t dig_P2;
-        int16_t dig_P3;
-        int16_t dig_P4;
-        int16_t dig_P5;
-        int16_t dig_P6;
-        int16_t dig_P7;
-        int16_t dig_P8;
-        int16_t dig_P9;
-        // uint16_t reserved;
-    } __attribute__((packed));
-};
-
-/*!
-  @struct Data
-  @brief Measurement data group
- */
-struct Data {
-    std::array<uint8_t, 6> raw{};  //!< RAW data [0,1,2]:pressure [3,4,5]:temperature
-    const Trimming* trimming{};    //!< For calculate
-
-    //! temperature (Celsius)
-    inline float temperature() const
-    {
-        return celsius();
-    }
-    float celsius() const;     //!< temperature (Celsius)
-    float fahrenheit() const;  //!< temperature (Fahrenheit)
-    float pressure() const;    //!< pressure (Pa)
 };
 
 }  // namespace bmp280

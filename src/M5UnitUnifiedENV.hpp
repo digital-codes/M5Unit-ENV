@@ -32,6 +32,8 @@
 #include "unit/unit_SHT40.hpp"
 #include "unit/unit_BMP280.hpp"
 #include "unit/unit_ENV4.hpp"
+// Barometer (SPA06-003, on Unit DoF10)
+#include "unit/unit_SPA06.hpp"
 // HatYun
 #include "unit/unit_SHT20.hpp"
 #include "unit/unit_HatYun.hpp"

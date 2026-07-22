@@ -4,17 +4,18 @@
 # show it. The components/bsec2 recipe reads CONFIG_M5UNIT_ENV_ENABLE_BSEC2 to decide whether to
 # download + link the Bosch prebuilt; M5Unit-ENV (root) requires bsec2 on the supported targets so
 # unit_BME688's IAQ path picks up the headers when enabled.
-menu "M5Unit-ENV BSEC2 (BME688 IAQ)"
+menu "M5Unit-ENV ENVPro example (BSEC2 / BME688 IAQ)"
 
 config M5UNIT_ENV_ENABLE_BSEC2
     bool "Enable BSEC2 (IAQ) for BME688 [downloads Bosch prebuilt; license acceptance required]"
     default n
-    depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32C3
+    depends on IDF_TARGET_ESP32 || IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32C3
     help
         Enable Bosch BSEC2 air-quality (IAQ) processing for the BME688 unit. When enabled, the build
         downloads the Bosch BSEC2 package (prebuilt libalgobsec.a + headers + config) at configure
-        time and links it. The prebuilt library is provided only for esp32/s2/s3/c3; other targets
-        cannot use BSEC2. No Bosch bytes are stored in this repository. Enabling this option means you
-        accept the Bosch BSEC software license terms. Default off = raw BME688 measurements only.
+        time and links it. This option is offered on esp32/s3/c3 (this library's targets that have a
+        Bosch prebuilt); other targets cannot use BSEC2. No Bosch bytes are stored in this repository.
+        Enabling this option means you accept the Bosch BSEC software license terms. Default off = raw
+        BME688 measurements only.
 
 endmenu

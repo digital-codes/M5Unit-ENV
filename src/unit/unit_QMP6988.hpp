@@ -121,9 +121,12 @@ struct Data {
     {
         return celsius();
     }
-    float celsius() const;       //!< temperature (Celsius)
-    float fahrenheit() const;    //!< temperature (Fahrenheit)
-    float pressure() const;      //!< pressure (Pa)
+    float celsius() const;     //!< temperature (Celsius)
+    float fahrenheit() const;  //!< temperature (Fahrenheit)
+    float pressure() const;    //!< pressure (Pa)
+    //! @brief Points to the owning unit's calibration for compensation
+    //! @note The calibration is read once in begin() and never changes, so this pointer stays valid for
+    //! the unit's lifetime. Do not keep a copied Data after the owning unit is destroyed.
     const Calibration* calib{};  //!< Calibration data
 };
 

@@ -57,9 +57,42 @@ Hat Yun is a cloud-shaped multifunctional environmental information collection b
 
 ENVPro (BME688) additionally needs the Bosch libraries:
 - [Bosch-BME68x-Library](https://github.com/boschsensortec/Bosch-BME68x-Library) — raw temperature / pressure / humidity / gas (all targets)
-- [Bosch-BSEC2-Library](https://github.com/boschsensortec/Bosch-BSEC2-Library) — air-quality (IAQ) output, optional; the Bosch prebuilt exists only for ESP32 / ESP32-S2 / ESP32-S3 (excluded on ESP32-C6 [NanoC6 / NessoN1], ESP32-H2 [NanoH2], ESP32-P4 [Tab5])
+- [Bosch-BSEC2-Library](https://github.com/boschsensortec/Bosch-BSEC2-Library) — air-quality (IAQ) output, optional; install it only when using BME688 IAQ. On Arduino / PlatformIO, IAQ is enabled on ESP32 / ESP32-S3 (excluded on ESP32-C6 [NanoC6 / NessoN1], ESP32-H2 [NanoH2], ESP32-P4 [Tab5], where no Bosch prebuilt exists)
 
-On Arduino / PlatformIO these are installed as library dependencies (BSEC2 is skipped automatically on the excluded targets). On ESP-IDF native they are fetched at build time: BME68x always, BSEC2 only when you opt in for the ENVPro example (see [For ESP-IDF settings](#for-esp-idf-settings)).
+On Arduino / PlatformIO, BME68x is installed as a library dependency. BSEC2 is not a required dependency; add `boschsensortec/bsec2` to your application `lib_deps` or install it with Arduino IDE Library Manager only when you use UnitENVPro IAQ APIs. On ESP-IDF native, BME68x is fetched at build time and BSEC2 is fetched only when you opt in for the ENVPro example (see [For ESP-IDF settings](#for-esp-idf-settings)).
+
+### Enabling BSEC2 IAQ
+
+UnitENVPro works without BSEC2 and reports raw temperature, pressure, humidity, and gas resistance. BSEC2 adds Bosch air-quality (IAQ) APIs such as `iaq()` and `bsec2Version()`, and is **opt-in**. The Bosch prebuilt library is required, so BSEC2 is unavailable on ESP32-C6 / ESP32-H2 / ESP32-P4 (NanoC6 / NessoN1 / NanoH2 / Tab5); on those targets ENVPro reports raw measurements only. Enabling BSEC2 downloads the Bosch package at build time and **constitutes acceptance of the Bosch BSEC license**; no Bosch binaries are stored in this repository.
+
+**Arduino / PlatformIO** — install the Bosch BSEC2 library explicitly on a supported target (ESP32 / ESP32-S3):
+
+```ini
+lib_deps =
+  m5stack/M5Unit-ENV
+  boschsensortec/bsec2
+```
+
+This repository also provides opt-in PlatformIO environments for checking the IAQ build path:
+
+```sh
+pio run -e UnitENVPro_BSEC2_PlotToSerial_Core_Arduino_latest
+pio test -e test_BME688_BSEC2_Core
+```
+
+Equivalent `_BSEC2` environments are provided for every Arduino board environment in this repository that targets a Bosch-supported ESP32 / ESP32-S3 chip. For Arduino IDE, install **bsec2** from Library Manager before compiling a sketch that uses BSEC2-only APIs.
+
+**ESP-IDF (`idf.py`)** — BSEC2 is enabled via Kconfig (`menuconfig`) instead of installing a library, and is offered on esp32 / esp32-s3 / esp32-c3:
+
+```sh
+cd examples/UnitUnified/UnitENVPro/PlotToSerial
+idf.py set-target esp32          # esp32 / esp32s2 / esp32s3
+idf.py menuconfig
+# -> M5Unit-ENV ENVPro example (BSEC2 / BME688 IAQ) -> [*] Enable BSEC2 (IAQ) for BME688
+idf.py build flash monitor
+```
+
+The **`M5Unit-ENV ENVPro example (BSEC2 / BME688 IAQ)`** menu item appears only on esp32 / esp32-s3 / esp32-c3; on esp32-c6 / esp32-h2 / esp32-p4 the Bosch prebuilt does not exist, so the item is hidden. Default is off (raw measurements only).
 
 
 ## License
@@ -99,19 +132,7 @@ idf.py menuconfig
 idf.py build flash monitor
 ```
 
-**UnitENVPro BSEC2 (BME688 IAQ)** — ENVPro can additionally output Bosch BSEC2 air-quality (IAQ) values on top of the raw temperature/pressure/humidity/gas readings. BSEC2 is **opt-in** and is only offered on the targets Bosch ships the prebuilt library for: **esp32 / esp32-s2 / esp32-s3** (on M5Stack hardware these are Core = esp32 and CoreS3 = esp32-s3):
-
-```sh
-cd examples/UnitUnified/UnitENVPro/PlotToSerial
-idf.py set-target esp32          # esp32 / esp32s2 / esp32s3
-idf.py menuconfig
-# -> M5Unit-ENV BSEC2 (BME688 IAQ) -> [*] Enable BSEC2 (IAQ) for BME688
-idf.py build flash monitor
-```
-
-- The **`M5Unit-ENV BSEC2 (BME688 IAQ)` menu item appears only on esp32 / esp32-s2 / esp32-s3.** On esp32-c6 / esp32-h2 / esp32-p4 (NanoC6 / NessoN1 / NanoH2 / Tab5) the Bosch prebuilt does not exist, so the item is hidden and ENVPro reports raw measurements only.
-- Enabling it downloads the Bosch BSEC2 package at build time; **enabling it constitutes acceptance of the Bosch BSEC license.** No Bosch binaries are stored in this repository.
-- Default is off (raw measurements only).
+**UnitENVPro example (BSEC2 / BME688 IAQ)** — ENVPro can additionally output Bosch BSEC2 air-quality (IAQ) values via `menuconfig` on esp32 / esp32-s3 / esp32-c3. See [Enabling BSEC2 IAQ](#enabling-bsec2-iaq) for the full opt-in steps (Arduino / PlatformIO and ESP-IDF).
 
 ## Doxygen document
 [GitHub Pages](https://m5stack.github.io/M5Unit-ENV/)
@@ -165,5 +186,3 @@ Unit CO2 is a digital air CO2 concentration detection unit, built-in with Sensir
 - [Sensirion I2C SCD4x](https://github.com/Sensirion/arduino-i2c-scd4x)
 - [Sensirion I2C SHT4x](https://github.com/Sensirion/arduino-i2c-sht4x)
 - [Sensirion Core](https://github.com/Sensirion/arduino-core)
-
-

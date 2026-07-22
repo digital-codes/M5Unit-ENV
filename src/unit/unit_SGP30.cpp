@@ -208,12 +208,18 @@ bool UnitSGP30::writeAbsoluteHumidity(const uint16_t raw, const uint32_t duratio
 
 bool UnitSGP30::writeAbsoluteHumidity(const float gm3, const uint32_t duration)
 {
-    int32_t tmp = static_cast<int32_t>(std::round(gm3 * 256.f));
-    if (tmp > 32767 || tmp < -32768) {
-        M5_LIB_LOGE("Over/underflow: %f / %d", gm3, tmp);
+    // Absolute humidity is an unsigned 8.8 fixed-point value (0 disables compensation). A negative gm3 would
+    // wrap through the int16 cast into a large positive raw value and be silently accepted, so reject it.
+    if (gm3 < 0.0f) {
+        M5_LIB_LOGE("Negative absolute humidity: %f", gm3);
         return false;
     }
-    return writeAbsoluteHumidity(static_cast<uint16_t>(static_cast<int16_t>(tmp)), duration);
+    int32_t tmp = static_cast<int32_t>(std::round(gm3 * 256.f));
+    if (tmp > 65535) {
+        M5_LIB_LOGE("Overflow: %f / %d", gm3, tmp);
+        return false;
+    }
+    return writeAbsoluteHumidity(static_cast<uint16_t>(tmp), duration);
 }
 
 bool UnitSGP30::measureTest(uint16_t& result)
