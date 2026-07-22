@@ -148,7 +148,7 @@ bool UnitBMP280::begin()
 
     uint8_t id{};
     if (!softReset() || !readRegister8(CHIP_ID, id, 0) || id != CHIP_IDENTIFIER) {
-        M5_LIB_LOGE("Can not detect BMP280 %02X", id);
+        M5_LIB_LOGE("Cannot detect BMP280 %02X", id);
         return false;
     }
 
@@ -474,7 +474,7 @@ bool UnitBMP280::read_measurement(bmp280::Data& d)
 
     // Datasheet says
     // Shadowing will only work if all data registers are read in a single burst read.
-    // Therefore, the user must use burst reads if he does not synchronize data readout with themeasurement cycle
+    // Therefore, the user must use burst reads if he does not synchronize data readout with the measurement cycle
     if (readRegister(GET_MEASUREMENT, d.raw.data(), d.raw.size(), 0)) {
         d.trimming = &_trimming;
         return true;
