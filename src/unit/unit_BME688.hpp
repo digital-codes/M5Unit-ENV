@@ -463,6 +463,7 @@ public:
           required in advance.
         */
         bme688::bsec2::SampleRate sample_rate{bme688::bsec2::SampleRate::LowPower};
+        ///@}
 #endif
 #if !defined(UNIT_BME688_USING_BSEC2) || defined(DOXYGEN_PROCESS)
         ///@name Only NanoC6
