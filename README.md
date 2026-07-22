@@ -82,7 +82,7 @@ pio test -e test_BME688_BSEC2_Core
 
 Equivalent `_BSEC2` environments are provided for every Arduino board environment in this repository that targets a Bosch-supported ESP32 / ESP32-S3 chip. For Arduino IDE, install **bsec2** from Library Manager before compiling a sketch that uses BSEC2-only APIs.
 
-**ESP-IDF (`idf.py`)** — BSEC2 is enabled via Kconfig (`menuconfig`) instead of installing a library, and is offered on esp32 / esp32-s2 / esp32-s3:
+**ESP-IDF (`idf.py`)** — BSEC2 is enabled via Kconfig (`menuconfig`) instead of installing a library, and is offered on esp32 / esp32-s3 / esp32-c3:
 
 ```sh
 cd examples/UnitUnified/UnitENVPro/PlotToSerial
@@ -92,7 +92,7 @@ idf.py menuconfig
 idf.py build flash monitor
 ```
 
-The **`M5Unit-ENV ENVPro example (BSEC2 / BME688 IAQ)`** menu item appears only on esp32 / esp32-s2 / esp32-s3; on esp32-c6 / esp32-h2 / esp32-p4 the Bosch prebuilt does not exist, so the item is hidden. Default is off (raw measurements only).
+The **`M5Unit-ENV ENVPro example (BSEC2 / BME688 IAQ)`** menu item appears only on esp32 / esp32-s3 / esp32-c3; on esp32-c6 / esp32-h2 / esp32-p4 the Bosch prebuilt does not exist, so the item is hidden. Default is off (raw measurements only).
 
 
 ## License
@@ -132,7 +132,7 @@ idf.py menuconfig
 idf.py build flash monitor
 ```
 
-**UnitENVPro example (BSEC2 / BME688 IAQ)** — ENVPro can additionally output Bosch BSEC2 air-quality (IAQ) values via `menuconfig` on esp32 / esp32-s2 / esp32-s3. See [Enabling BSEC2 IAQ](#enabling-bsec2-iaq) for the full opt-in steps (Arduino / PlatformIO and ESP-IDF).
+**UnitENVPro example (BSEC2 / BME688 IAQ)** — ENVPro can additionally output Bosch BSEC2 air-quality (IAQ) values via `menuconfig` on esp32 / esp32-s3 / esp32-c3. See [Enabling BSEC2 IAQ](#enabling-bsec2-iaq) for the full opt-in steps (Arduino / PlatformIO and ESP-IDF).
 
 ## Doxygen document
 [GitHub Pages](https://m5stack.github.io/M5Unit-ENV/)
