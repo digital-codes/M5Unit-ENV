@@ -110,7 +110,7 @@ TEST_F(TestSPA06, PeriodicSamplesVary)
     auto r = collect_periodic_measurements(unit.get(), COUNT, collect_timeout(unit.get(), COUNT), record_pressure);
     EXPECT_FALSE(r.timed_out);
     EXPECT_EQ(r.update_count, COUNT);
-    ASSERT_GE(g_pressure_samples.size(), 2u);
+    EXPECT_GE(g_pressure_samples.size(), 2u);
 
     bool varied = false;
     for (size_t i = 1; i < g_pressure_samples.size(); ++i) {
