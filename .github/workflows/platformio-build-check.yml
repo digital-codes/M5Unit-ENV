@@ -190,6 +190,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: 20
       matrix:
         environment:
           - test_native_SPA06_data

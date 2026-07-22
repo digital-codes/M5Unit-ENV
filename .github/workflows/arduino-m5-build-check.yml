@@ -192,6 +192,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: 20
       matrix:
         platform-url:
           - https://m5stack.oss-cn-shenzhen.aliyuncs.com/resource/arduino/package_m5stack_index.json
