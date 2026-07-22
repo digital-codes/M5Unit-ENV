@@ -403,6 +403,7 @@ TEST_F(TestBME688, BSEC2)
     EXPECT_TRUE(unit->bsec2SetState(state));           // rewrite
     EXPECT_TRUE(unit->bsec2GetState(state2, actual));  // get
     cmp = memcmp(state2, state, actual) == 0;
+    EXPECT_TRUE(cmp);
     if (!cmp) {
         M5_DUMPI(state, actual);
         M5_DUMPI(state2, actual);
