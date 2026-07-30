@@ -10,7 +10,6 @@
 #include <M5UnitUnified.h>
 #include <M5UnitUnifiedENV.h>
 #include <wiring/m5_unit_unified_wiring.hpp>  // Board-aware I2C wiring helpers
-#include <cmath>
 
 namespace {
 auto& lcd = M5.Display;
@@ -18,11 +17,6 @@ m5::unit::UnitUnified Units;
 m5::unit::UnitENV4 unit;
 auto& sht40  = unit.sht40;
 auto& bmp280 = unit.bmp280;
-
-float calculate_altitude(const float pressure, const float seaLevelHPa = 1013.25f)
-{
-    return 44330.f * (1.0f - pow((pressure / 100.f) / seaLevelHPa, 0.1903f));
-}
 }  // namespace
 
 void setup()
@@ -78,12 +72,11 @@ void loop()
         lcd.endWrite();
     }
     if (bmp280.updated()) {
-        auto p = bmp280.pressure();
         M5.Log.printf(
             ">BMP280Temp:%.4f\n"
             ">Pressure:%.4f\n"
             ">Altitude:%.4f\n",
-            bmp280.temperature(), p * 0.01f /* To hPa */, calculate_altitude(p));
+            bmp280.temperature(), bmp280.pressure() * 0.01f /* To hPa */, bmp280.altitude());
 
         lcd.startWrite();
         lcd.fillRect(0, lcd.fontHeight() * 3, lcd.width(), lcd.fontHeight() * 4, TFT_BLACK);
@@ -93,7 +86,7 @@ void loop()
             "Temp:%.4f\n"
             "Pressure:%.4f\n"
             "Altitude:%.4f",
-            bmp280.temperature(), p * 0.01f /* To hPa */, calculate_altitude(p));
+            bmp280.temperature(), bmp280.pressure() * 0.01f /* To hPa */, bmp280.altitude());
         lcd.endWrite();
     }
 

@@ -44,22 +44,22 @@ void loop()
     Units.update();
     if (unit.updated()) {
 #if defined(UNIT_BME688_USING_BSEC2)
-        M5.Log.printf(">IAQ:%.2f\n>Temperature:%.2f\n>Pressure:%.2f\n>Humidity:%.2f\n>GAS:%.2f\n", unit.iaq(),
-                      unit.temperature(), unit.pressure(), unit.humidity(), unit.gas());
+        M5.Log.printf(">IAQ:%.2f\n>Temperature:%.2f\n>Pressure:%.2f\n>Humidity:%.2f\n>GAS:%.2f\n>Altitude:%.2f\n",
+                      unit.iaq(), unit.temperature(), unit.pressure(), unit.humidity(), unit.gas(), unit.altitude());
+        lcd.startWrite();
+        lcd.fillRect(0, 0, lcd.width(), lcd.fontHeight() * 6, TFT_BLACK);
+        lcd.setCursor(0, 0);
+        lcd.printf("IAQ:%.2f\nTemperature:%.2f\nPressure:%.2f\nHumidity:%.2f\nGAS:%.2f\nAltitude:%.2f", unit.iaq(),
+                   unit.temperature(), unit.pressure(), unit.humidity(), unit.gas(), unit.altitude());
+        lcd.endWrite();
+#else
+        M5.Log.printf(">Temperature:%.2f\n>Pressure:%.2f\n>Humidity:%.2f\n>GAS:%.2f\n>Altitude:%.2f\n",
+                      unit.temperature(), unit.pressure(), unit.humidity(), unit.gas(), unit.altitude());
         lcd.startWrite();
         lcd.fillRect(0, 0, lcd.width(), lcd.fontHeight() * 5, TFT_BLACK);
         lcd.setCursor(0, 0);
-        lcd.printf("IAQ:%.2f\nTemperature:%.2f\nPressure:%.2f\nHumidity:%.2f\nGAS:%.2f", unit.iaq(), unit.temperature(),
-                   unit.pressure(), unit.humidity(), unit.gas());
-        lcd.endWrite();
-#else
-        M5.Log.printf(">Temperature:%.2f\n>Pressure:%.2f\n>Humidity:%.2f\n>GAS:%.2f\n", unit.temperature(),
-                      unit.pressure(), unit.humidity(), unit.gas());
-        lcd.startWrite();
-        lcd.fillRect(0, 0, lcd.width(), lcd.fontHeight() * 4, TFT_BLACK);
-        lcd.setCursor(0, 0);
-        lcd.printf("Temperature:%.2f\nPressure:%.2f\nHumidity:%.2f\nGAS:%.2f", unit.temperature(), unit.pressure(),
-                   unit.humidity(), unit.gas());
+        lcd.printf("Temperature:%.2f\nPressure:%.2f\nHumidity:%.2f\nGAS:%.2f\nAltitude:%.2f", unit.temperature(),
+                   unit.pressure(), unit.humidity(), unit.gas(), unit.altitude());
         lcd.endWrite();
         // m5::utility::delay(1000);
 #endif
