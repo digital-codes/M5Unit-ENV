@@ -34,6 +34,8 @@
 #include "unit/unit_ENV4.hpp"
 // Barometer (SPA06-003, on Unit DoF10)
 #include "unit/unit_SPA06.hpp"
+// Barometric formula utility (shared across pressure units)
+#include "utility/barometric_math.hpp"
 // HatYun
 #include "unit/unit_SHT20.hpp"
 #include "unit/unit_HatYun.hpp"
