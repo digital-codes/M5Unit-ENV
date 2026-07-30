@@ -113,6 +113,11 @@ public:
     float relativeAltitude() const;
     //! @brief Tare the current pressure as the 0 m reference for relativeAltitude()
     void setAltitudeReference();
+    //! @brief Deprecated alias for setAltitudeReference() (kept for source compatibility with 1.6.0)
+    [[deprecated("Use setAltitudeReference() instead")]] void setReference()
+    {
+        setAltitudeReference();
+    }
     ///@}
 
     ///@name Single shot measurement
