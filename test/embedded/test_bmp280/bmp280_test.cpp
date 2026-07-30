@@ -528,11 +528,11 @@ TEST_F(TestBMP280, Altitude)
     unit->flush();
     EXPECT_TRUE(unit->startPeriodicMeasurement());
 
-    auto ad     = unit->asAdapter<m5::unit::AdapterI2C>(m5::unit::Adapter::Type::I2C);
-    bool is_bus = ad && ad->implType() == m5::unit::AdapterI2C::ImplType::Bus;
+    auto ad          = unit->asAdapter<m5::unit::AdapterI2C>(m5::unit::Adapter::Type::I2C);
+    bool is_bus      = ad && ad->implType() == m5::unit::AdapterI2C::ImplType::Bus;
     uint32_t cycle   = std::max<uint32_t>(unit->interval(), 20);
     uint32_t timeout = is_bus ? std::max<uint32_t>(cycle, 500) * (STORED_SIZE + 1) * 4 : cycle * (STORED_SIZE + 1);
-    auto r = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
+    auto r           = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
     EXPECT_FALSE(r.timed_out);
     EXPECT_TRUE(std::isfinite(unit->pressure()));
 
