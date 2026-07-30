@@ -207,6 +207,12 @@ public:
     {
         return !empty() ? oldest().pressure() : std::numeric_limits<float>::quiet_NaN();
     }
+    //! @brief Absolute altitude (m) versus the given sea-level pressure (QNH, Pa)
+    float altitude(const float sea_level_pa = 101325.0f) const;
+    //! @brief Altitude (m) relative to the last setAltitudeReference() tare point (0 m at that pressure)
+    float relativeAltitude() const;
+    //! @brief Tare the current pressure as the 0 m reference for relativeAltitude()
+    void setAltitudeReference();
     ///@}
 
     ///@name Periodic measurement
@@ -380,6 +386,7 @@ protected:
     qmp6988::Calibration _calibration{};
     config_t _cfg{};
     bool _only_temperature{};
+    float _altitude_reference_pa{101325.0f};
 };
 
 ///@cond

@@ -8,6 +8,7 @@
   @brief BMP280 Unit for M5UnitUnified
  */
 #include "unit_BMP280.hpp"
+#include "../utility/barometric_math.hpp"
 #include <M5Utility.hpp>
 #include <limits>  // NaN
 #include <array>
@@ -16,6 +17,7 @@ using namespace m5::utility::mmh3;
 using namespace m5::unit::types;
 using namespace m5::unit::bmp280;
 using namespace m5::unit::bmp280::command;
+using m5::unit::barometric::calculate_altitude;
 
 namespace {
 
@@ -480,6 +482,21 @@ bool UnitBMP280::read_measurement(bmp280::Data& d)
         return true;
     }
     return false;
+}
+
+float UnitBMP280::altitude(const float sea_level_pa) const
+{
+    return calculate_altitude(pressure(), sea_level_pa);
+}
+
+float UnitBMP280::relativeAltitude() const
+{
+    return calculate_altitude(pressure(), _altitude_reference_pa);
+}
+
+void UnitBMP280::setAltitudeReference()
+{
+    _altitude_reference_pa = pressure();
 }
 
 }  // namespace unit

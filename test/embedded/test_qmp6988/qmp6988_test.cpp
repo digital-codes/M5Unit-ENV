@@ -498,3 +498,31 @@ TEST_F(TestQMP6988, Periodic)
         }
     }
 }
+
+TEST_F(TestQMP6988, Altitude)
+{
+    SCOPED_TRACE(ustr);
+
+    // Restart periodic to avoid stale post-reset readings
+    EXPECT_TRUE(unit->stopPeriodicMeasurement());
+    unit->flush();
+    EXPECT_TRUE(unit->startPeriodicMeasurement());
+
+    auto ad     = unit->asAdapter<m5::unit::AdapterI2C>(m5::unit::Adapter::Type::I2C);
+    bool is_bus = ad && ad->implType() == m5::unit::AdapterI2C::ImplType::Bus;
+    uint32_t cycle   = std::max<uint32_t>(unit->interval(), 20);
+    uint32_t timeout = is_bus ? std::max<uint32_t>(cycle, 500) * (STORED_SIZE + 1) * 4 : cycle * (STORED_SIZE + 1);
+    auto r = collect_periodic_measurements(unit.get(), STORED_SIZE, timeout);
+    EXPECT_FALSE(r.timed_out);
+    EXPECT_TRUE(std::isfinite(unit->pressure()));
+
+    const float alt = unit->altitude();
+    EXPECT_TRUE(std::isfinite(alt));
+    EXPECT_GT(alt, -500.0f);
+    EXPECT_LT(alt, 9000.0f);
+
+    unit->setAltitudeReference();
+    const float rel = unit->relativeAltitude();
+    EXPECT_TRUE(std::isfinite(rel));
+    EXPECT_NEAR(rel, 0.0f, 1.0f);
+}

@@ -650,3 +650,25 @@ TEST_F(TestBME688, SelfTest)
     SCOPED_TRACE(ustr);
     EXPECT_TRUE(unit->selfTest());
 }
+
+TEST_F(TestBME688, Altitude)
+{
+    SCOPED_TRACE(ustr);
+
+    // The fixture starts periodic on begin(); collect a few samples via the check callback
+    EXPECT_TRUE(unit->inPeriodic());
+    auto timeout = (unit->interval() * 2) * 8;
+    auto r       = collect_periodic_measurements(unit.get(), 4, timeout, check_measurement_values);
+    EXPECT_FALSE(r.timed_out);
+    EXPECT_TRUE(std::isfinite(unit->pressure()));
+
+    const float alt = unit->altitude();
+    EXPECT_TRUE(std::isfinite(alt));
+    EXPECT_GT(alt, -500.0f);
+    EXPECT_LT(alt, 9000.0f);
+
+    unit->setAltitudeReference();
+    const float rel = unit->relativeAltitude();
+    EXPECT_TRUE(std::isfinite(rel));
+    EXPECT_NEAR(rel, 0.0f, 1.0f);
+}
