@@ -64,10 +64,10 @@ void record_pressure(UnitSPA06* u)
 // Callback for collect_periodic_measurements: every collected sample is a finite, plausible ambient value
 void check_spa06_values(UnitSPA06* u)
 {
-    const float hpa = u->pressure();
-    EXPECT_TRUE(std::isfinite(hpa));
-    EXPECT_GT(hpa, 300.0f);  // high-altitude floor
-    EXPECT_LT(hpa, 1100.0f);
+    const float pa = u->pressure();
+    EXPECT_TRUE(std::isfinite(pa));
+    EXPECT_GT(pa, 30000.0f);  // high-altitude floor
+    EXPECT_LT(pa, 110000.0f);
 
     const float celsius = u->temperature();
     EXPECT_TRUE(std::isfinite(celsius));
@@ -131,7 +131,7 @@ TEST_F(TestSPA06, RelativeAltitudeTare)
         unit->update();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    unit->setReference();
+    unit->setAltitudeReference();
     // Right after taring, the relative altitude of a static unit is ~0 m
     const float rel = unit->relativeAltitude();
     EXPECT_TRUE(std::isfinite(rel));
@@ -338,10 +338,10 @@ TEST_F(TestSPA06, PressureOnlyMode)
     EXPECT_EQ(r.update_count, STORED_SIZE);
 
     // Pressure is compensated (seeded traw); temperature() is NaN in pressure-only mode
-    const float hpa = unit->pressure();
-    EXPECT_TRUE(std::isfinite(hpa));
-    EXPECT_GT(hpa, 300.0f);
-    EXPECT_LT(hpa, 1100.0f);
+    const float pa = unit->pressure();
+    EXPECT_TRUE(std::isfinite(pa));
+    EXPECT_GT(pa, 30000.0f);
+    EXPECT_LT(pa, 110000.0f);
     EXPECT_TRUE(std::isnan(unit->temperature()));
 }
 
@@ -379,8 +379,8 @@ TEST_F(TestSPA06, MeasureSingleshot)
     Data d{};
     EXPECT_TRUE(unit->measureSingleshot(d, Oversampling::X16, Oversampling::X2));
     EXPECT_TRUE(std::isfinite(d.pressure()));
-    EXPECT_GT(d.pressure(), 300.0f);
-    EXPECT_LT(d.pressure(), 1100.0f);
+    EXPECT_GT(d.pressure(), 30000.0f);
+    EXPECT_LT(d.pressure(), 110000.0f);
     EXPECT_TRUE(std::isfinite(d.temperature()));
     EXPECT_GT(d.temperature(), -20.0f);
     EXPECT_LT(d.temperature(), 60.0f);

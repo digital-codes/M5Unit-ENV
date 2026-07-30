@@ -103,16 +103,16 @@ public:
 
     ///@name Measurement
     ///@{
-    //! @brief Latest compensated pressure (hPa)
+    //! @brief Latest compensated pressure (Pa)
     float pressure() const;
     //! @brief Latest compensated temperature (degC)
     float temperature() const;
-    //! @brief Absolute altitude (m) versus the given sea-level pressure (QNH, hPa)
-    float altitude(const float sea_level_hpa = 1013.25f) const;
-    //! @brief Altitude (m) relative to the last setReference() tare point (0 m at that pressure)
+    //! @brief Absolute altitude (m) versus the given sea-level pressure (QNH, Pa)
+    float altitude(const float sea_level_pa = 101325.0f) const;
+    //! @brief Altitude (m) relative to the last setAltitudeReference() tare point (0 m at that pressure)
     float relativeAltitude() const;
     //! @brief Tare the current pressure as the 0 m reference for relativeAltitude()
-    void setReference();
+    void setAltitudeReference();
     ///@}
 
     ///@name Single shot measurement
@@ -197,7 +197,7 @@ private:
     float _kt{};
     int32_t _seed_tmp_raw{};  // Temperature seeded once for pressure compensation in Mode::Pressure
     uint8_t _tmp_ext{};       // MEAS_CFG TMP_EXT bit (0 or 0x08) matched to TMP_COEF_SRCE, OR'd into mode writes
-    float _reference_hpa{1013.25f};
+    float _altitude_reference_pa{101325.0f};
     uint32_t _pushed{}, _consumed{};
     std::unique_ptr<m5::container::CircularBuffer<spa06::Data>> _data{};
 };

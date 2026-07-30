@@ -9,9 +9,11 @@
 */
 #include <gtest/gtest.h>
 #include <unit/unit_SPA06_data.hpp>
+#include <utility/barometric_math.hpp>
 #include <cmath>
 
 using namespace m5::unit::spa06;
+using m5::unit::barometric::calculate_altitude;
 
 TEST(SPA06Data, Raw24BitSignExtend)
 {
@@ -50,7 +52,7 @@ TEST(SPA06Data, CompensationMatchesReference)
 
 TEST(SPA06Data, SelfContainedCompensation)
 {
-    // Data carries coeffs/kp/kt by value, so it compensates standalone (pressure in hPa).
+    // Data carries coeffs/kp/kt by value, so it compensates standalone (pressure in Pa).
     Data d{};
     d.coeffs.c00 = 100000;  // Pa
     d.coeffs.c0  = 40;      // -> 20 C
@@ -59,7 +61,7 @@ TEST(SPA06Data, SelfContainedCompensation)
     EXPECT_NEAR(d.temperature(), 20.0f, 1e-3f);
     EXPECT_NEAR(d.celsius(), 20.0f, 1e-3f);
     EXPECT_NEAR(d.fahrenheit(), 68.0f, 1e-2f);
-    EXPECT_NEAR(d.pressure(), 1000.0f, 1e-3f);  // 100000 Pa -> 1000 hPa
+    EXPECT_NEAR(d.pressure(), 100000.0f, 1e-3f);  // Pa
 
     // Unpopulated Data (kp/kt == 0) -> NaN, not a bogus compensated value
     Data e{};
@@ -78,10 +80,10 @@ TEST(SPA06Data, SelfContainedCompensation)
 TEST(SPA06Data, AltitudeFormula)
 {
     // At sea-level pressure the relative altitude is ~0 m.
-    EXPECT_NEAR(altitude_m(1013.25f, 1013.25f), 0.0f, 1e-3f);
-    // A ~12 hPa drop is roughly +100 m near sea level.
-    EXPECT_GT(altitude_m(1000.0f, 1013.25f), 80.0f);
-    EXPECT_LT(altitude_m(1000.0f, 1013.25f), 130.0f);
+    EXPECT_NEAR(calculate_altitude(101325.0f, 101325.0f), 0.0f, 1e-3f);
+    // A ~1200 Pa drop is roughly +100 m near sea level.
+    EXPECT_GT(calculate_altitude(100000.0f, 101325.0f), 80.0f);
+    EXPECT_LT(calculate_altitude(100000.0f, 101325.0f), 130.0f);
 }
 
 TEST(SPA06Data, MeasurementTime)
