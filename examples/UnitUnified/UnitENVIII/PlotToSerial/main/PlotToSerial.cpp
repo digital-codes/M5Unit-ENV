@@ -89,11 +89,13 @@ void loop()
         lcd.endWrite();
     }
     if (qmp6988.updated()) {
-        M5.Log.printf(">QMP6988Temp:%2.2f\n>Pressure:%.2f\n", qmp6988.temperature(), qmp6988.pressure() * 0.01f);
+        M5.Log.printf(">QMP6988Temp:%2.2f\n>Pressure:%.2f\n>Altitude:%.2f\n", qmp6988.temperature(),
+                      qmp6988.pressure() * 0.01f, qmp6988.altitude());
         lcd.startWrite();
-        lcd.fillRect(0, lcd.fontHeight() * 3, lcd.width(), lcd.fontHeight() * 3, TFT_BLACK);
+        lcd.fillRect(0, lcd.fontHeight() * 3, lcd.width(), lcd.fontHeight() * 4, TFT_BLACK);
         lcd.setCursor(0, lcd.fontHeight() * 3);
-        lcd.printf("QMP6988\nTemp:%2.2f\nPressure:%.2f", qmp6988.temperature(), qmp6988.pressure() * 0.01f);
+        lcd.printf("QMP6988\nTemp:%2.2f\nPressure:%.2f\nAltitude:%.2f", qmp6988.temperature(),
+                   qmp6988.pressure() * 0.01f, qmp6988.altitude());
         lcd.endWrite();
     }
 

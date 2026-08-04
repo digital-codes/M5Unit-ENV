@@ -8,6 +8,7 @@
   @brief QMP6988 Unit for M5UnitUnified
 */
 #include "unit_QMP6988.hpp"
+#include "../utility/barometric_math.hpp"
 #include <M5Utility.hpp>
 #include <limits>  // NaN
 #include <cmath>
@@ -17,6 +18,7 @@ using namespace m5::utility::mmh3;
 using namespace m5::unit::types;
 using namespace m5::unit::qmp6988;
 using namespace m5::unit::qmp6988::command;
+using m5::unit::barometric::calculate_altitude;
 
 namespace {
 constexpr uint8_t chip_id{0x5C};
@@ -557,5 +559,21 @@ bool UnitQMP6988::read_calibration(qmp6988::Calibration& c)
 #endif
     return true;
 }
+
+float UnitQMP6988::altitude(const float sea_level_pa) const
+{
+    return calculate_altitude(pressure(), sea_level_pa);
+}
+
+float UnitQMP6988::relativeAltitude() const
+{
+    return calculate_altitude(pressure(), _altitude_reference_pa);
+}
+
+void UnitQMP6988::setAltitudeReference()
+{
+    _altitude_reference_pa = pressure();
+}
+
 }  // namespace unit
 }  // namespace m5

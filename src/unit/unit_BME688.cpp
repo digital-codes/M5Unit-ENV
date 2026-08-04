@@ -8,6 +8,7 @@
   @brief BME688 Unit for M5UnitUnified
 */
 #include "unit_BME688.hpp"
+#include "../utility/barometric_math.hpp"
 #if defined(UNIT_BME688_USING_BSEC2)
 #pragma message "Using bsec2"
 #include <inc/bsec_interface.h>  // BSEC2
@@ -22,6 +23,7 @@ using namespace m5::utility::mmh3;
 using namespace m5::unit::types;
 using namespace m5::unit::bme688;
 using namespace m5::unit::bme688::command;
+using m5::unit::barometric::calculate_altitude;
 
 static_assert(
     std::is_same<std::underlying_type<Oversampling>::type, decltype(m5::unit::bme688::bme68xConf::os_temp)>::value,
@@ -1037,6 +1039,21 @@ bool UnitBME688::process_data(bsecOutputs& outputs, const int64_t ns, const bme6
     return false;
 }
 #endif
+
+float UnitBME688::altitude(const float sea_level_pa) const
+{
+    return calculate_altitude(pressure(), sea_level_pa);
+}
+
+float UnitBME688::relativeAltitude() const
+{
+    return calculate_altitude(pressure(), _altitude_reference_pa);
+}
+
+void UnitBME688::setAltitudeReference()
+{
+    _altitude_reference_pa = pressure();
+}
 
 }  // namespace unit
 }  // namespace m5

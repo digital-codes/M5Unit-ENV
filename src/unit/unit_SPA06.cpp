@@ -8,6 +8,7 @@
   @brief UnitSPA06 (SPA06-003) barometric pressure + temperature
 */
 #include "unit_SPA06.hpp"
+#include "../utility/barometric_math.hpp"
 #include <M5Utility.hpp>
 #include <limits>
 
@@ -15,6 +16,7 @@ using namespace m5::utility::mmh3;
 using namespace m5::unit::types;
 using namespace m5::unit::spa06;
 using namespace m5::unit::spa06::command;
+using m5::unit::barometric::calculate_altitude;
 
 namespace {
 // ID (0x0D) reset value is 0x11h (datasheet Table 7 / Sec 7.10): REV_ID[7:4]=1, PROD_ID[3:0]=1.
@@ -517,7 +519,7 @@ float UnitSPA06::pressure() const
     if (!d) {
         return 0.0f;
     }
-    return spa06::compensate_pressure(d->psr_raw(), d->tmp_raw(), _coeffs, _kp, _kt) / 100.0f;  // Pa -> hPa
+    return spa06::compensate_pressure(d->psr_raw(), d->tmp_raw(), _coeffs, _kp, _kt);
 }
 
 float UnitSPA06::temperature() const
@@ -535,19 +537,19 @@ float UnitSPA06::temperature() const
     return spa06::compensate_temperature(d->tmp_raw(), _coeffs, _kt);
 }
 
-float UnitSPA06::altitude(const float sea_level_hpa) const
+float UnitSPA06::altitude(const float sea_level_pa) const
 {
-    return spa06::altitude_m(pressure(), sea_level_hpa);
+    return calculate_altitude(pressure(), sea_level_pa);
 }
 
 float UnitSPA06::relativeAltitude() const
 {
-    return spa06::altitude_m(pressure(), _reference_hpa);
+    return calculate_altitude(pressure(), _altitude_reference_pa);
 }
 
-void UnitSPA06::setReference()
+void UnitSPA06::setAltitudeReference()
 {
-    _reference_hpa = pressure();
+    _altitude_reference_pa = pressure();
 }
 
 }  // namespace unit

@@ -371,7 +371,8 @@ void loop()
         M5.Log.printf(">SHT20_Temp:%2.2f\n>SHT20_Humidity:%2.2f\n", sht20.temperature(), sht20.humidity());
     }
     if (bmp280.updated()) {
-        M5.Log.printf(">BMP280_Temp:%2.2f\n>BMP280_Pressure:%.2f\n", bmp280.temperature(), bmp280.pressure() * 0.01f);
+        M5.Log.printf(">BMP280_Temp:%2.2f\n>BMP280_Pressure:%.2f\n>BMP280_Altitude:%.2f\n", bmp280.temperature(),
+                      bmp280.pressure() * 0.01f, bmp280.altitude());
     }
     if (unit.updated()) {
         M5.Log.printf(">Light:%u\n", unit.light());

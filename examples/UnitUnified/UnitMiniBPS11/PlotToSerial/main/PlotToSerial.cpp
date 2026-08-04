@@ -47,11 +47,13 @@ void loop()
 
     if (unit.updated()) {
         // Can be checked on serial plotters
-        M5.Log.printf(">Temperature:%2.2f\n>Pressure:%.2f\n", unit.temperature(), unit.pressure() * 0.01f);
+        M5.Log.printf(">Temperature:%2.2f\n>Pressure:%.2f\n>Altitude:%.2f\n", unit.temperature(),
+                      unit.pressure() * 0.01f, unit.altitude());
         lcd.startWrite();
-        lcd.fillRect(0, 0, lcd.width(), lcd.fontHeight() * 2, TFT_BLACK);
+        lcd.fillRect(0, 0, lcd.width(), lcd.fontHeight() * 3, TFT_BLACK);
         lcd.setCursor(0, 0);
-        lcd.printf("Temp:%2.2f\nPressure:%.2f hPa", unit.temperature(), unit.pressure() * 0.01f);
+        lcd.printf("Temp:%2.2f\nPressure:%.2f hPa\nAltitude:%.2f m", unit.temperature(), unit.pressure() * 0.01f,
+                   unit.altitude());
         lcd.endWrite();
     }
 

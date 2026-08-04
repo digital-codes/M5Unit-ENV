@@ -8,7 +8,7 @@
   @brief SPA06-003 measurement data + calibration/compensation (framework independent)
   @details PSR/TMP are 24-bit 2's complement; 11 calibration coefficients
   (c0,c1 12-bit; c00,c10 20-bit; c01,c11,c20,c21,c30 16-bit; c31,c40 12-bit) drive a high-order
-  compensation polynomial. Pressure is returned in Pa; the UnitSPA06 driver converts to hPa.
+  compensation polynomial. Pressure is returned in Pa (matches BMP280 / QMP6988 / BME688).
 */
 #ifndef M5_UNIT_ENV_UNIT_SPA06_DATA_HPP
 #define M5_UNIT_ENV_UNIT_SPA06_DATA_HPP
@@ -170,12 +170,6 @@ inline float compensate_pressure(const int32_t psr_raw, const int32_t tmp_raw, c
            traw_sc * praw_sc * (c.c11 + praw_sc * (c.c21 + praw_sc * c.c31));
 }
 
-//! @brief Relative altitude (m) from a pressure and a reference (both hPa), barometric formula
-inline float altitude_m(const float pressure_hpa, const float sea_level_hpa)
-{
-    return 44330.0f * (1.0f - std::pow(pressure_hpa / sea_level_hpa, 1.0f / 5.255f));
-}
-
 /*!
   @struct Data
   @brief One SPA06 sample: a 6-byte burst from PSR_B2 (0x00) = PSR(24) + TMP(24), big-endian
@@ -216,11 +210,11 @@ struct Data {
     {
         return celsius() * 9.0f / 5.0f + 32.0f;
     }
-    //! @brief Compensated pressure (hPa); NaN if not populated/measured
+    //! @brief Compensated pressure (Pa); NaN if not populated/measured
     inline float pressure() const
     {
         return (kp != 0.0f && kt != 0.0f && psr_raw() != NOT_MEASURED)
-                   ? compensate_pressure(psr_raw(), tmp_raw(), coeffs, kp, kt) / 100.0f  // Pa -> hPa
+                   ? compensate_pressure(psr_raw(), tmp_raw(), coeffs, kp, kt)
                    : std::numeric_limits<float>::quiet_NaN();
     }
 };

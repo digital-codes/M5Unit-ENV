@@ -594,6 +594,12 @@ public:
         return !empty() ? oldest().raw_gas() : std::numeric_limits<float>::quiet_NaN();
     }
 #endif
+    //! @brief Absolute altitude (m) versus the given sea-level pressure (QNH, Pa)
+    float altitude(const float sea_level_pa = 101325.0f) const;
+    //! @brief Altitude (m) relative to the last setAltitudeReference() tare point (0 m at that pressure)
+    float relativeAltitude() const;
+    //! @brief Tare the current pressure as the 0 m reference for relativeAltitude()
+    void setAltitudeReference();
     ///@}
 
 #if 0
@@ -1019,6 +1025,7 @@ protected:
     types::elapsed_time_t _can_measure_time{};
 
     config_t _cfg{};
+    float _altitude_reference_pa{101325.0f};
 };
 
 ///@cond 0
