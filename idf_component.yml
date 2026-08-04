@@ -2,7 +2,7 @@ description: Library for M5Stack UNIT ENV using M5UnitUnified.
 url: https://github.com/m5stack/M5Unit-ENV
 issues: https://github.com/m5stack/M5Unit-ENV/issues
 license: MIT
-version: "1.7.0"
+version: "1.7.1"
 
 dependencies:
   idf: ">=5.0"
@@ -20,7 +20,7 @@ dependencies:
   bme68x:
     git: https://github.com/m5stack/M5Unit-ENV.git
     path: components/bme68x
-    version: feature/fix-idf-transitive-dependency
+    version: "1.7.1"
   # BSEC2 DL-recipe lives in this repo (no Bosch bytes). Same self-git-reference pattern as bme68x
   # for transitive-fetch compatibility. Kconfig visible in menuconfig via the fetched sub-component.
   # The Bosch prebuilt blob exists for esp32/s2/s3/c3; intersected with this library's targets
@@ -30,7 +30,7 @@ dependencies:
   bsec2:
     git: https://github.com/m5stack/M5Unit-ENV.git
     path: components/bsec2
-    version: feature/fix-idf-transitive-dependency
+    version: "1.7.1"
     rules:
       - if: "target in [esp32, esp32s3, esp32c3]"
 
